@@ -1,0 +1,108 @@
+---
+title: "3D Image Registration"
+output: html_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(tidyverse)
+library(x3ptools)
+user_meas <- readRDS("/media/Sunny/CSAFE/User comparison scans/errors.rda")
+
+head(user_meas)
+
+a1 <- user_meas[1,]
+a1_df <- x3p_to_df(a1$x3p[[1]])
+
+a1_df <- a1_df %>%
+  mutate(value = value - max(value, na.rm = T))
+
+a1_cc <- a1_df %>%
+  group_by(x) %>%
+  summarise(y = mean(y, na.rm = T), value = mean(value, na.rm = T))
+
+
+
+groove_a1 <- bulletxtrctr::cc_locate_grooves(a1_cc, method = "lassobasic")$groove[1]
+
+
+## convert x3p to dataframe
+head(a1_df) ## look at the new data frame
+
+a1_df_small <- a1_df %>% 
+  filter(between(x, 500, 1800))
+
+
+
+a1_plot <- a1_df %>% 
+  filter(y == median(y)) %>%
+  ggplot() + geom_line(aes(x = x, y = value)) + 
+  theme_bw()
+
+a2 <- user_meas[11,] ## Land 5 of the second set of scans matches Land 1 of the first set.... let's use that! 
+a2_df <- x3p_to_df(a2$x3p[[1]])
+
+a2_df <- a2_df %>%
+  mutate(value = value - max(value, na.rm = T))
+
+a2_cc <- a2_df %>%
+  group_by(x) %>%
+  summarise(y = mean(y, na.rm = T), value = mean(value, na.rm = T))
+
+groove_a2 <- bulletxtrctr::cc_locate_grooves(a2_cc, method = "lassobasic")$groove[1] 
+
+lag_a2 <- groove_a2 - groove_a1
+
+a2_df <- a2_df %>%
+  mutate(x = x - lag_a2)
+
+a2_df_small <- a2_df %>%
+  filter(between(x, 500 - lag_a2, 1800 - lag_a2))
+
+a2_plot <- a2_df %>%
+  filter(y == median(y)) %>%
+  ggplot() + geom_line(aes(x = x, y = value)) + 
+  theme_bw()
+```
+
+I'm going to try the `RNiftyReg` package. It can supposedly perform registration of 3D objects (!!!!). 
+
+```{r, echo = F, warning = F, message = F}
+a1_array <- array(data = a1_df_small$value, 
+             dim=c(length(unique(a1_df_small$x)), 
+                   length(unique(a1_df_small$y))), 
+             dimnames=list(unique(a1_df_small$x), unique(a1_df_small$y))
+            )
+
+a2_array <- array(data = a2_df_small$value, 
+             dim=c(length(unique(a2_df_small$x)), 
+                   length(unique(a2_df_small$y))), 
+             dimnames=list(unique(a2_df_small$x), unique(a2_df_small$y))
+            )
+
+a1_array <- channel(a1_array)
+
+library(RNiftyReg)
+
+result <- niftyreg(source = a2_array, target = a1_array, internal = FALSE, scope = "affine")
+
+
+a2_reg <- applyTransform(forward(result), a2_array, internal = FALSE)
+dimnames(a2_reg) <- dimnames(a2_array)
+class(a2_reg) <- 'array'
+a2_reg_df <- rownames_to_column(as.data.frame(a2_reg, row.names = row.names(a2_reg)), var = "x")
+
+a2_reg_df <- a2_reg_df %>% 
+  gather(2:1024, key = "y", value = "value") %>% 
+  mutate(x = as.numeric(x), y = as.numeric(y))
+
+
+a1_a2_regplot <- ggplot() + 
+  geom_line(data = a1_df[a1_df$y == median(a1_df$y),], aes(x = x, y = value), color = "black") + 
+  geom_line(data = a2_df[a2_df$y == median(a2_df$y),], aes(x = x, y = value), color = "red") + 
+  geom_line(data = a2_reg_df[a2_reg_df$y == median(a2_reg_df$y),], aes(x = x, y = value), color = "blue") +
+  theme_bw()
+
+library(mmand)
+
+display(a1_array)
+```
