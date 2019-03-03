@@ -20,13 +20,18 @@ user_meas <- data.frame(source = filenames)
 user_meas <- user_meas %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
   x3ptools::read_x3p(filename)
 }))
-head(user_meas)
+
+user_meas <- user_meas %>% mutate(source = purrr::map_chr(as.character(source), .f = function(source){
+  strsplit(source, "//")[[1]][2]
+}))
+
 
 user_meas <- user_meas %>% mutate(Round = purrr::map_chr(as.character(source), .f = function(source){
   strsplit(source, "/")[[1]][1]
 }), 
 Operator = purrr::map_chr(as.character(source), .f = function(source){
-  strsplit(source, "/")[[1]][2]
+  op <- strsplit(source, "/")[[1]][2]
+  strsplit(op, " ")[[1]][1]
 }), 
 source = factor(str_replace_all(source, ";", " -")),
 Barrel = purrr::map_chr(as.character(source), .f = function(source){
@@ -37,33 +42,44 @@ Bullet = purrr::map_chr(as.character(source), .f = function(source){
 }), 
 Land = purrr::map_chr(as.character(source), .f = function(source){
   strsplit(source, " - ")[[1]][4]
+}), 
+Machine = purrr::map_chr(as.character(source), .f = function(source){
+  mac <- ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][6], strsplit(source, " - ")[[1]][5]) 
+  str_replace_all(mac, " ", "")
+}), 
+Scan = purrr::map_chr(as.character(source), .f = function(source){
+  ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][5], "Scan 1")
 }))
 
 head(user_meas)
 ```
 
-Extract ccdata from each of the x3p files, then convert them back to x3p files so we have the correct header.info...   
 
+Save just the information about the study set up.  
 ```{r, echo = F, warning = F, message = F}
+user_setup <- user_meas %>% select(source, Round, Operator, Barrel, Bullet, Land, Machine, Scan)
+#saveRDS(user_setup, "../data/user_meas_setup.rda")
 
-#user_meas <- user_meas %>% mutate(
-#  x3p = x3p %>% purrr::map(.f = function(x) x %>% 
-#                             rotate_x3p(angle = -90) %>%
-#                             y_flip_x3p())
-#)
+```
+
+
+Extract ccdata from each of the x3p files.  
+```{r, echo = F, warning = F, message = F}
 user_meas <- user_meas %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
   x3ptools::x3p_to_df(x3p)
 }))
 
-user_meas <- user_meas %>% mutate(x3p = purrr::map(ccdata, .f = df_to_x3p))
-
-#head(user_meas)
+user_ccdata <- user_meas %>% select(source, Round, Operator, Barrel, Bullet, Land, Machine, Scan, ccdata)
+#saveRDS(user_ccdata, "../data/user_meas_ccdata.rda")
 ```
 
 
+Now, we want to grab recapture data from only Round 4, and save those as their own file.  
 ```{r, echo = F, warning = F, message = F}
-#image_x3p(user_meas$x3p[[1]]) # doesn't work on the server
+user_recaptures <- user_meas %>% filter(Round == "Round 4") %>% select(-ccdata)
+#saveRDS(user_recaptures, "../data/user_recaptures.rda")
 ```
+
 
 
 
@@ -72,10 +88,15 @@ user_crosscuts <- user_meas %>% mutate(
   crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
 )
 
+### REALLY IMPORTANT NOTE: 
+### Some of the x3p files returned with NA values for the optimal crosscut.
+### We will be imputing the median optimal crosscut for the other x3p files.  
 
-x3p_ten_crosscut <- function(x3p, y = NULL, range = 1e-05){
+user_crosscuts <- user_crosscuts %>% mutate(crosscut = ifelse(is.na(crosscut), median(crosscut, na.rm = T), crosscut))
+
+ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
   #x3pdat <- bulletxtrctr::check_x3p(x3p)
-  x3p_df <- na.trim(x3p_to_df(x3p))
+  x3p_df <- na.trim(ccdata)
   ys <- unique(x3p_df$y)
   if (is.null(y))
     y <- median(ys)
@@ -89,27 +110,25 @@ x3p_ten_crosscut <- function(x3p, y = NULL, range = 1e-05){
 }
 # now extract the crosscuts
 user_crosscuts <- user_crosscuts %>% mutate(
-  ccdata = purrr::map2(.x = x3p, .y = crosscut, 
-                       .f = x3p_ten_crosscut)
+  ccdata = purrr::map2(.x = ccdata, .y = crosscut, 
+                       .f = ccdata_ten_crosscut)
 )
 
-user_c <- user_crosscuts %>% mutate(
+user_crosscuts <- user_crosscuts %>% mutate(
   ccdata = purrr::map(ccdata, .f = function(ccdata){
     ccdata %>% group_by(x) %>% summarise(y = mean(y, na.rm = T), value = mean(value, na.rm = T))
   })
 )
 
-
-user_crosscuts <- user_crosscuts %>% mutate(
-  grooves = ccdata %>% 
-    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
-               adjust = 10, return_plot = TRUE)
-)
-
-
-
+user_crosscuts <- user_crosscuts %>% select(-x3p)
+#saveRDS(user_crosscuts, "../data/user_crosscuts.rda")
 ```
 
+
+Remove recapture data so we only have "Scan 1" from each round.  
+```{r, echo = F, warning = F, message = F}
+user_crosscuts <- user_crosscuts %>% filter(Scan == "Scan 1")
+```
 
 
 

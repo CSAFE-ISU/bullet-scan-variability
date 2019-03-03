@@ -1,0 +1,132 @@
+---
+title: "user measurements pairwise comparisons."
+output: html_document
+---
+
+
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+library(randomForest)
+```
+
+
+```{r, echo = F, warning = F, message = F}
+user_crosscuts <- readRDS("../data/user_crosscuts.rda")
+user_crosscuts <- user_crosscuts %>% filter(Scan == "Scan 1" | (Operator == "Marco" & Scan == "Scan 2")) %>% filter(Round != "Round 0") 
+
+
+## We need to get use recapture 2 for Marco, because one of the "Scan 1" files is missing.  
+user_crosscuts <- user_crosscuts %>% filter(!(Scan == "Scan 1" & Operator == "Marco"))
+
+
+
+user_crosscuts <- user_crosscuts %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+               adjust = 10, return_plot = TRUE)
+)
+```
+
+
+
+```{r, echo = F, warning = F, message = F}
+user_crosscuts <- user_crosscuts %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+#head(user_crosscuts)
+
+
+user_crosscuts$barrelland <- paste0(user_crosscuts$Barrel, "-", user_crosscuts$Land)
+
+user_crosscuts$barrellandbullet <- paste0(user_crosscuts$Barrel, "-", user_crosscuts$Land, "-", 
+                                          user_crosscuts$Bullet, "-", user_crosscuts$Operator, "-", 
+                                          user_crosscuts$Machine, "-", user_crosscuts$Round)
+
+sigs_user <- user_crosscuts %>% select(-ccdata)
+saveRDS(sigs_user, "../data/user_meas_sigs.rda")
+
+
+user_lands <- unique(user_crosscuts$barrellandbullet)
+comparisons_user <- data.frame(
+  expand.grid(land1 = user_lands, land2 = user_lands), stringsAsFactors = FALSE)
+
+comparisons_user <- comparisons_user %>% mutate(
+  aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
+    land1 <- user_crosscuts$sigs[user_crosscuts$barrellandbullet == xx][[1]]
+    land2 <- user_crosscuts$sigs[user_crosscuts$barrellandbullet == yy][[1]]
+    land1$bullet <- "first-land"
+    land2$bullet <- "second-land"
+    
+    sig_align(land1$sig, land2$sig)
+  })
+)
+
+#head(comparisons_lb)
+
+comparisons_user <- comparisons_user %>% mutate(
+  ccf0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_ccf(x$lands)),
+  lag0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_lag(x$lands)),
+  D0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_D(x$lands)),
+  length0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_length(x$lands)),
+  overlap0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_overlap(x$lands))
+)
+
+comparisons_user <- comparisons_user %>% mutate(
+  striae = aligned %>% purrr::map(.f = sig_cms_max, span = 75) 
+)
+comparisons_user <- comparisons_user %>% mutate(
+  cms_per_mm = purrr::map2(striae, aligned, .f = function(s, a) {
+    extract_feature_cms_per_mm(s$lines, a$lands, resolution=0.645)
+  }),
+  matches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = TRUE)
+  }),
+  mismatches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = FALSE)
+  })
+  
+)
+
+#comparisons_user <- comparisons_user %>% mutate(
+#  bulletA = gsub("([1-2])-([1-6])","\\1",land1),
+#  bulletB = gsub("([1-2])-([1-6])","\\1",land2),
+#  landA = gsub("([1-2])-([1-6])","\\2",land1),
+#  landB = gsub("([1-2])-([1-6])","\\2",land2)
+#)
+
+comparisons_user <- comparisons_user %>% mutate(
+  features = purrr::map2(.x = aligned, .y = striae, .f = extract_features_all, resolution = 0.645)
+)
+
+comparisons_user <- comparisons_user %>% mutate(
+  legacy_features = purrr::map(striae, extract_features_all_legacy, resolution = 0.645)
+)
+
+comparisons_user <- comparisons_user %>% tidyr::unnest(legacy_features) 
+# scale features before using them in the random forest, legacy features can be used out of the box
+comparisons_user$rfscore <- predict(bulletxtrctr::rtrees, newdata = comparisons_user, type = "prob")[,2]
+
+#head(comparisons_user)
+
+saveRDS(comparisons_user, "../data/user_meas_comparisons.rda")
+
+rfscores_user <- comparisons_user %>% select(land1, land2, rfscore)
+saveRDS(rfscores_user, "../data/user_meas_rfscores.rda")
+
+
+```
