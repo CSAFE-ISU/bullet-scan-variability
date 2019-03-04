@@ -21,6 +21,8 @@ user_crosscuts <- user_crosscuts %>% filter(Scan == "Scan 1" | (Operator == "Mar
 
 
 ## We need to get use recapture 2 for Marco, because one of the "Scan 1" files is missing.  
+
+## NEED TO FIX THIS FILTER COMMAND AND RE-RUN IF WE DO THINGS INVOLVING MARCO  
 user_crosscuts <- user_crosscuts %>% filter(!(Scan == "Scan 1" & Operator == "Marco"))
 
 
