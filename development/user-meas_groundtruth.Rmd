@@ -1,0 +1,249 @@
+---
+title: "user-meas ground truth"
+output: html_document
+---
+
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(gridExtra)
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores <- readRDS("../data/user_meas_rfscores.rda")
+
+head(user_rfscores)
+
+user_rfscores <- user_rfscores %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("Barrel_S1", "Land_S1", "Bullet_S1", 
+                    "Operator_S1", "Machine_S1", "Round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("Barrel_S2", "Land_S2", "Bullet_S2", 
+                    "Operator_S2", "Machine_S2", "Round_S2"), sep = "-")
+
+head(user_rfscores)
+
+```
+
+
+## BARREL 6  
+
+First, we want to find Allison's pairings with herself in each round FOR BARREL 6.  
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Allison") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+Now, we will find Allison's "Bullet 1-Round 1-Land 1" pairings with Anyesha's.  
+
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Anyesha") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+Now, we will find Allison's "Bullet 1-Round 1-Land 1" pairings with Carley's.  
+
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Carley") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+Now, we will find Allison's "Bullet 1-Round 1-Land 1" pairings with Connor's.  
+
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Connor") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+Now, we will find Allison's "Bullet 1-Round 1-Land 1" pairings with Jozef's.  
+
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Jozef") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+Now, we will find Allison's "Bullet 1-Round 1-Land 1" pairings with Marco's.  
+
+
+I subsetted these wrong. I will need to go back and re-do some of this with his scans in there.  
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Marco") %>% 
+  filter(Barrel_S1 == "Barrel 6") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison" & Operator_S2 == "Connor") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 5") %>% 
+  filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Barrel_S2 + Bullet_S2+Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+```{r, echo = F, warning = F, message = F}
+connor_rfscores <- user_rfscores 
+
+```
+
+
+
+## Barrel 5  
+
+Next, we want to find Allison's pairings with everybody in each round FOR BARREL 5.  
+
+```{r, echo = F, warning = F, message = F}
+user_rfscores %>%
+  filter(Operator_S1 == "Allison") %>% 
+  filter(Barrel_S1 == "Barrel 5" & Barrel_S2 == "Barrel 5") %>% 
+  filter(Bullet_S1 == "Bullet 1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Operator_S2 + Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+## Making ground truth stuff.
+
+
+```{r}
+user_lands <- data.frame(land = unique(user_rfscores$land1))
+
+user_lands <- user_lands %>% mutate(scan_id = land) %>% separate(land, into = c("Barrel", "Land", "Bullet", "Operator", "Machine", "Round"), sep = "-")
+
+head(user_lands)
+
+write_csv(user_lands, path = "../data/user_gt.csv", col_names = TRUE) 
+```
+
+Read in ground truth Excel file and now do some stuff.  
+
+
+```{r}
+
+user_gt <- read_csv("../data/user_gt.csv")
+head(user_gt)
+
+user_mat <- matrix(NA, nrow = nrow(user_gt), ncol = nrow(user_gt))
+row.names(user_mat) <- user_gt$scan_id
+colnames(user_mat) <- user_gt$scan_id
+
+for (i in 1:nrow(user_mat)){
+  for(j in 1:ncol(user_mat)){
+    user_mat[i,j] <- ifelse(user_gt$unique_id[i] == user_gt$unique_id[j], "Same Source", "Different Source")
+  }
+}
+
+
+user_mat <- as.data.frame(user_mat)
+user_mat$land1 <- rownames(user_mat)
+user_mat <- user_mat %>% gather(1:246, key = "land2", value = "ground_truth")
+
+head(user_mat)
+
+user_rfscores <- readRDS("../data/user_meas_rfscores.rda")
+
+
+user_results <- full_join(user_rfscores, user_mat)
+user_results <- user_results %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("Barrel_S1", "Land_S1", "Bullet_S1", 
+                    "Operator_S1", "Machine_S1", "Round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("Barrel_S2", "Land_S2", "Bullet_S2", 
+                    "Operator_S2", "Machine_S2", "Round_S2"), sep = "-")
+
+#saveRDS(user_results, "../data/user_meas_pairwise.rda")
+head(user_results)
+```
+
+
+

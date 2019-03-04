@@ -1,0 +1,63 @@
+---
+title: "user-meas pairwise models"
+output: html_document
+---
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(gridExtra)
+library(lme4)
+```
+
+```{r}
+user_results <- readRDS("../data/user_meas_pairwise.rda")
+
+
+user_results <- user_results %>% 
+  mutate(operator_truth = ifelse(Operator_S1 == Operator_S2, 
+                                 "Same Operator", "Diff Operator"), 
+         bullet_truth = ifelse(Bullet_S1 == Bullet_S2,
+                               "Same Bullet", "Diff Bullet"),
+         machine_truth = ifelse(Machine_S1 == Machine_S2,
+                                "Same Machine", "Diff Machine"),
+         round_truth = ifelse(Round_S1 == Round_S2,
+                              "Same Round", "Diff Round"))
+head(user_results)
+```
+
+```{r}
+user_results %>% 
+  ggplot() + geom_density(aes(x = rfscore, fill = factor(ground_truth)), alpha = 0.5) + 
+  theme_bw() + 
+  scale_fill_manual(name = "", breaks = c("Different Source", "Same Source"), 
+                     labels = c("Different Source", "Same Source"), 
+                     limits=c("Different Source","Same Source"), 
+                     values = c("grey80", "darkorange")) + 
+  facet_wrap(~operator_truth, nrow = 2) + 
+  labs(x = "Random Forest Score", y = "", title = "User measurements set Land-to-Land Results")
+```
+
+
+```{r}
+user_results %>% 
+  ggplot() + geom_density(aes(x = rfscore, fill = factor(operator_truth)), alpha = 0.5) + 
+  theme_bw() + 
+  scale_fill_manual(name = "", breaks = c("Diff Operator", "Same Operator"), 
+                     labels = c("Diff Operator", "Same Operator"), 
+                     limits=c("Diff Operator","Same Operator"), 
+                     values = c("grey80", "darkorange")) + 
+  facet_wrap(~machine_truth, nrow = 2) + 
+  labs(x = "Random Forest Score", y = "", title = "User measurements set Land-to-Land Results")
+```
+
+
+```{r}
+ind_model <- lmer(rfscore~ ground_truth + (1| bullet_truth/ground_truth),
+                  data = user_results)
+
+
+```
+
+
+
+
