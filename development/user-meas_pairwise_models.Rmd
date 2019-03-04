@@ -52,8 +52,14 @@ user_results %>%
 
 
 ```{r}
-ind_model <- lmer(rfscore~ ground_truth + (1| bullet_truth/ground_truth),
-                  data = user_results)
+user_results_b6 <- user_results %>%
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>%
+  filter(ground_truth == "Same Source") %>%
+  filter(Bullet_S1 == "Bullet 1" & Bullet_S2 == "Bullet 1")
+
+
+ind_model <- lmer(rfscore~ (1|operator_truth) + (1|machine_truth),
+                  data = user_results_b6)
 
 
 ```

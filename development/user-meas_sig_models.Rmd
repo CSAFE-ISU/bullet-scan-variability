@@ -1,0 +1,225 @@
+---
+title: "user-meas pairwise models"
+output: html_document
+---
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(gridExtra)
+library(lme4)
+library(bulletxtrctr)
+```
+
+
+First, we want to add our "unique_id" for each land to the signature data, so we can group them by that and align the lands. 
+```{r}
+user_sigs <- readRDS("../data/user_meas_sigs.rda")
+user_sigs <- user_sigs %>% 
+  mutate(scan_id = barrellandbullet) %>% 
+  select(-barrellandbullet) %>% 
+  select(scan_id, sigs)
+head(user_sigs)
+
+user_gt <- read_csv("../data/user_gt.csv")
+user_sigs <- full_join(user_sigs, user_gt)
+
+head(user_sigs)
+```
+
+
+## BARREL 6 VIZ OF SIGNATURES  
+
+```{r}
+barrel6land1 <- user_sigs %>% filter(unique_id == "BL 6-1")
+barrel6land1 <- barrel6land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land1$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+b6l1_long <- barrel6land1 %>% unnest(sigs_aligned)
+
+b6l1_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator))) + 
+  geom_line(aes(x = x, y = sig1)) + 
+  theme_bw() + 
+  facet_wrap(~Machine, nrow = 2)
+
+barrel6land2 <- user_sigs %>% filter(unique_id == "BL 6-2")
+barrel6land2 <- barrel6land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land2$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+barrel6land3 <- user_sigs %>% filter(unique_id == "BL 6-3")
+barrel6land3 <- barrel6land3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land3$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel6land4 <- user_sigs %>% filter(unique_id == "BL 6-4")
+barrel6land4 <- barrel6land4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land4$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel6land5 <- user_sigs %>% filter(unique_id == "BL 6-5")
+barrel6land5 <- barrel6land5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land5$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel6land6 <- user_sigs %>% filter(unique_id == "BL 6-6")
+barrel6land6 <- barrel6land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land6$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+barrel6 <- rbind(barrel6land1, barrel6land2, barrel6land3, barrel6land4, barrel6land5, barrel6land6)
+
+b6_long <- barrel6 %>% unnest(sigs_aligned)
+head(b6_long)
+
+
+b6_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 6")
+
+
+b6_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 6")
+
+
+b6_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 6")
+
+```
+
+
+
+## BARREL 5 VIZ OF SIGNATURES  
+
+
+```{r}
+barrel5land1 <- user_sigs %>% filter(unique_id == "BL 5-1")
+barrel5land1 <- barrel5land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land1$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+barrel5land2 <- user_sigs %>% filter(unique_id == "BL 5-2")
+barrel5land2 <- barrel5land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land2$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+barrel5land3 <- user_sigs %>% filter(unique_id == "BL 5-3")
+barrel5land3 <- barrel5land3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land3$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel5land4 <- user_sigs %>% filter(unique_id == "BL 5-4")
+barrel5land4 <- barrel5land4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land4$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel5land5 <- user_sigs %>% filter(unique_id == "BL 5-5")
+barrel5land5 <- barrel5land5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land5$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel5land6 <- user_sigs %>% filter(unique_id == "BL 5-6")
+barrel5land6 <- barrel5land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land6$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+```
+
+```{r}
+barrel5 <- rbind(barrel5land1, barrel5land2, barrel5land3, barrel5land4, barrel5land5, barrel5land6)
+
+b5_long <- barrel5 %>% unnest(sigs_aligned)
+head(b5_long)
+
+
+b5_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 5")
+
+
+b5_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 5")
+
+
+b5_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 5")
+
+```

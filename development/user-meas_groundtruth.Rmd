@@ -227,8 +227,13 @@ user_mat$land1 <- rownames(user_mat)
 user_mat <- user_mat %>% gather(1:246, key = "land2", value = "ground_truth")
 
 head(user_mat)
+user_gt <- user_gt %>% mutate(land1 = scan_id, land2 = scan_id)
+user_land1 <- user_gt %>% select(land1, unique_id)
+user_land2 <- user_gt %>% select(land2, unique_id)
 
 user_rfscores <- readRDS("../data/user_meas_rfscores.rda")
+user_rfscores <- right_join(user_rfscores, user_land1, by = "land1")
+user_rfscores <- right_join(user_rfscores, user_land2, by = "land2")
 
 
 user_results <- full_join(user_rfscores, user_mat)
@@ -239,10 +244,12 @@ user_results <- user_results %>%
                     "Operator_S1", "Machine_S1", "Round_S1"), sep = "-") %>% 
   separate(col = id_S2, 
            into = c("Barrel_S2", "Land_S2", "Bullet_S2", 
-                    "Operator_S2", "Machine_S2", "Round_S2"), sep = "-")
+                    "Operator_S2", "Machine_S2", "Round_S2"), sep = "-") %>%
+  mutate(unique_id_S1 = unique_id.x, unique_id_S2 = unique_id.y) %>%
+  select(-unique_id.x, -unique_id.y)
 
-#saveRDS(user_results, "../data/user_meas_pairwise.rda")
-head(user_results)
+saveRDS(user_results, "../data/user_meas_pairwise.rda")
+#head(user_results)
 ```
 
 
