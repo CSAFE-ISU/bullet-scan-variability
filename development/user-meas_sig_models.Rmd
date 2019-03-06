@@ -280,9 +280,107 @@ This first chunk of code should be commented out when working locally.
 This next chunk of code should be commented out when working on the server!! 
 
 ```{r}
+barrel6_x3p <- readRDS("../data/barrel6_example_x3p.rda")
+
+## give it a scan id 
+barrel6_x3p <- barrel6_x3p %>% 
+  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+                          Operator, "-", Machine, "-", Round))
+
+## add on the correct unique_id
+user_gt <- read_csv("../data/user_gt.csv")
+barrel6_x3p <- left_join(barrel6_x3p, user_gt)
+
+
+## grab the crosscut values
+user_crosscuts <- readRDS("../data/user_crosscuts.rda")
+
+user_crosscuts <- user_crosscuts %>% 
+  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+                          Operator, "-", Machine, "-", Round))
+
+## We need to get use recapture 2 for Marco in Round 4, because one of the "Scan 1" files is missing.  
+## So, we will grab everybody's "Scan 2" in Round 4.  
+round4 <- user_crosscuts %>% 
+  filter(Round == "Round 4") %>%
+  filter(Scan == "Scan 2") %>%
+  mutate(Scan = "Scan 1")
+
+user_crosscuts <- user_crosscuts %>% 
+  filter(Round != "Round 4") %>%
+  filter(Round != "Round 0")
+
+user_crosscuts <- rbind(user_crosscuts, round4)
+user_crosscuts <- left_join(user_crosscuts, user_gt)
+## now, we basically want a data frame that has an x3p file with a bunch of crosscut values (and operator values).  
+
+barrel6_x3p <- barrel6_x3p %>% 
+  filter(Bullet == "Bullet 1") %>%
+  select(x3p, unique_id)
+head(barrel6_x3p)
+user_crosscuts <- user_crosscuts %>% 
+  select(Operator, crosscut, scan_id, unique_id) %>% 
+  nest(-unique_id)
+
+barrel6_x3p <- left_join(barrel6_x3p, user_crosscuts)
+head(barrel6_x3p)
+
 
 ```
 
 
 
+## Next, we want to look at autocorrelations of signatures!  
 
+```{r, echo = F, warning = F, message = F}
+user_sigs <- readRDS("../data/user_meas_sigs.rda")
+user_sigs <- user_sigs %>% 
+  mutate(scan_id = barrellandbullet) %>% 
+  select(-barrellandbullet) %>% 
+  select(scan_id, sigs)
+head(user_sigs)
+
+user_gt <- read_csv("../data/user_gt.csv")
+user_sigs <- full_join(user_sigs, user_gt)
+
+head(user_sigs)
+
+
+user_acf <- user_sigs %>% 
+  select(scan_id, sigs, Barrel, Bullet, Operator, Machine, unique_id) %>%
+  mutate(acf = purrr::map(sigs, .f = function(sigs){
+    acf_obj <- acf(sigs$sig, lag.max = 200, type = "correlation", na.action = na.pass, plot = FALSE)
+    data.frame(lag = acf_obj$lag[,,1], acf = acf_obj$acf[,,1])
+  }))
+
+head(user_acf)
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 6") == T) %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_hline(yintercept = 0, color = "grey70") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land")
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 6") == T) %>% 
+  filter(lag < 50) %>%
+  ggplot() + 
+  geom_vline(xintercept = 5, color = "grey70") + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land, lags under 50")
+```
