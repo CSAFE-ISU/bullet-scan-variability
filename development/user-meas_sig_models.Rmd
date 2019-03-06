@@ -384,3 +384,33 @@ user_acf %>%
   scale_color_discrete(name = "Barrel-Land ID") + 
   labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land, lags under 50")
 ```
+
+
+
+```{r, echo = F, warning = F, message = F}
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 5") == T) %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_hline(yintercept = 0, color = "grey70") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land")
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 5") == T) %>% 
+  filter(lag < 50) %>%
+  ggplot() + 
+  geom_vline(xintercept = 5, color = "grey70") + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land, lags under 50")
+```
