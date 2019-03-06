@@ -103,7 +103,9 @@ b6_long <- barrel6 %>% unnest(sigs_aligned)
 head(b6_long)
 
 
-b6_long %>% ggplot() + 
+b6_long %>% 
+  #filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
   geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
   geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
   theme_bw() + 
@@ -223,3 +225,32 @@ b5_long %>% ggplot() +
   labs(title = "Hamby set Barrel 5")
 
 ```
+
+
+
+## Now, visualizing crosscuts on top of an image.  
+
+Note: This is a better way to subset things (as to not get rid of Marco! Oops!)...  
+
+```{r}
+user_crosscuts <- readRDS("../data/user_crosscuts.rda")
+
+user_crosscuts <- user_crosscuts %>% 
+  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+                          Operator, "-", Machine, "-", Round))
+
+round4 <- user_crosscuts %>% 
+  filter(Round == "Round 4") %>%
+  filter(Scan == "Scan 2") %>%
+  mutate(Scan = "Scan 1")
+
+user_crosscuts <- user_crosscuts %>% 
+  filter(Round != "Round 4")
+
+user_crosscuts <- rbind(user_crosscuts, round4)
+
+
+user_crosscuts <- full_join(user_crosscuts, user_gt)
+
+```
+
