@@ -17,14 +17,24 @@ library(randomForest)
 
 ```{r, echo = F, warning = F, message = F}
 user_crosscuts <- readRDS("../data/user_crosscuts.rda")
-user_crosscuts <- user_crosscuts %>% filter(Scan == "Scan 1" | (Operator == "Marco" & Scan == "Scan 2")) %>% filter(Round != "Round 0") 
+
+user_crosscuts <- user_crosscuts %>% 
+  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+                          Operator, "-", Machine, "-", Round))
 
 
-## We need to get use recapture 2 for Marco, because one of the "Scan 1" files is missing.  
 
-## NEED TO FIX THIS FILTER COMMAND AND RE-RUN IF WE DO THINGS INVOLVING MARCO  
-user_crosscuts <- user_crosscuts %>% filter(!(Scan == "Scan 1" & Operator == "Marco"))
+## We need to get use recapture 2 for Marco in Round 4, because one of the "Scan 1" files is missing.  
+## So, we will grab everybody's "Scan 2" in Round 4.  
+round4 <- user_crosscuts %>% 
+  filter(Round == "Round 4") %>%
+  filter(Scan == "Scan 2") %>%
+  mutate(Scan = "Scan 1")
 
+user_crosscuts <- user_crosscuts %>% 
+  filter(Round != "Round 4")
+
+user_crosscuts <- rbind(user_crosscuts, round4)
 
 
 user_crosscuts <- user_crosscuts %>% mutate(
