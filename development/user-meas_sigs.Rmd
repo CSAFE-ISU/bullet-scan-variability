@@ -60,7 +60,8 @@ round4 <- user_crosscuts %>%
   mutate(Scan = "Scan 1")
 
 user_crosscuts <- user_crosscuts %>% 
-  filter(Round != "Round 4")
+  filter(Round != "Round 4") %>%
+  filter(Round != "Round 0")
 
 user_crosscuts <- rbind(user_crosscuts, round4)
 

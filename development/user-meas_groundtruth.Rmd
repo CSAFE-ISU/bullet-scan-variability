@@ -193,6 +193,9 @@ user_rfscores %>%
 ## Making ground truth stuff.
 
 
+NEED TO BE CAREFUL ABOUT THIS! DON'T WANT TO HAVE TO REDO THE ENTIRE GT DOCUMENT. 
+
+
 ```{r}
 user_lands <- data.frame(land = unique(user_rfscores$land1))
 
