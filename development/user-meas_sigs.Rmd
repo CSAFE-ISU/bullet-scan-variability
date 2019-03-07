@@ -87,24 +87,18 @@ user_crosscuts <- user_crosscuts %>% mutate(
 #head(user_crosscuts)
 
 
-user_crosscuts$barrelland <- paste0(user_crosscuts$Barrel, "-", user_crosscuts$Land)
-
-user_crosscuts$barrellandbullet <- paste0(user_crosscuts$Barrel, "-", user_crosscuts$Land, "-", 
-                                          user_crosscuts$Bullet, "-", user_crosscuts$Operator, "-", 
-                                          user_crosscuts$Machine, "-", user_crosscuts$Round)
-
 sigs_user <- user_crosscuts %>% select(-ccdata)
 saveRDS(sigs_user, "../data/user_meas_sigs.rda")
 
 
-user_lands <- unique(user_crosscuts$barrellandbullet)
+user_lands <- unique(user_crosscuts$scan_id)
 comparisons_user <- data.frame(
   expand.grid(land1 = user_lands, land2 = user_lands), stringsAsFactors = FALSE)
 
 comparisons_user <- comparisons_user %>% mutate(
   aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
-    land1 <- user_crosscuts$sigs[user_crosscuts$barrellandbullet == xx][[1]]
-    land2 <- user_crosscuts$sigs[user_crosscuts$barrellandbullet == yy][[1]]
+    land1 <- user_crosscuts$sigs[user_crosscuts$scan_id == xx][[1]]
+    land2 <- user_crosscuts$sigs[user_crosscuts$scan_id == yy][[1]]
     land1$bullet <- "first-land"
     land2$bullet <- "second-land"
     
@@ -143,12 +137,6 @@ comparisons_user <- comparisons_user %>% mutate(
   
 )
 
-#comparisons_user <- comparisons_user %>% mutate(
-#  bulletA = gsub("([1-2])-([1-6])","\\1",land1),
-#  bulletB = gsub("([1-2])-([1-6])","\\1",land2),
-#  landA = gsub("([1-2])-([1-6])","\\2",land1),
-#  landB = gsub("([1-2])-([1-6])","\\2",land2)
-#)
 
 comparisons_user <- comparisons_user %>% mutate(
   features = purrr::map2(.x = aligned, .y = striae, .f = extract_features_all, resolution = 0.645)
@@ -164,7 +152,7 @@ comparisons_user$rfscore <- predict(bulletxtrctr::rtrees, newdata = comparisons_
 
 #head(comparisons_user)
 
-saveRDS(comparisons_user, "../data/user_meas_comparisons.rda")
+#saveRDS(comparisons_user, "../data/user_meas_comparisons.rda")
 
 rfscores_user <- comparisons_user %>% select(land1, land2, rfscore)
 saveRDS(rfscores_user, "../data/user_meas_rfscores.rda")
