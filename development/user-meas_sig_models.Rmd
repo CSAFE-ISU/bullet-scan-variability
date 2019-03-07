@@ -13,6 +13,9 @@ library(bulletxtrctr)
 
 First, we want to add our "unique_id" for each land to the signature data, so we can group them by that and align the lands. 
 ```{r}
+## can probably just read in user_pairwise after running through the user-meas_groundtruth file... :) 
+
+
 user_sigs <- readRDS("../data/user_meas_sigs.rda")
 user_sigs <- user_sigs %>% 
   mutate(scan_id = barrellandbullet) %>% 
