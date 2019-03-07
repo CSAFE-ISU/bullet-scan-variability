@@ -51,7 +51,7 @@ Scan = purrr::map_chr(as.character(source), .f = function(source){
   ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][5], "Scan 1")
 }))
 
-head(user_meas)
+#head(user_meas)
 ```
 
 
@@ -72,15 +72,6 @@ user_meas <- user_meas %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
 user_ccdata <- user_meas %>% select(source, Round, Operator, Barrel, Bullet, Land, Machine, Scan, ccdata)
 #saveRDS(user_ccdata, "../data/user_meas_ccdata.rda")
 ```
-
-
-Now, we want to grab recapture data from only Round 4, and save those as their own file.  
-```{r, echo = F, warning = F, message = F}
-user_recaptures <- user_meas %>% filter(Round == "Round 4") %>% select(-ccdata)
-#saveRDS(user_recaptures, "../data/user_recaptures.rda")
-```
-
-
 
 
 ```{r, echo = F, warning = F, message = F}
@@ -124,11 +115,6 @@ user_crosscuts <- user_crosscuts %>% select(-x3p)
 #saveRDS(user_crosscuts, "../data/user_crosscuts.rda")
 ```
 
-
-Remove recapture data so we only have "Scan 1" from each round.  
-```{r, echo = F, warning = F, message = F}
-user_crosscuts <- user_crosscuts %>% filter(Scan == "Scan 1")
-```
 
 
 
