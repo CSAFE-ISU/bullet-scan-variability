@@ -51,7 +51,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.3) + 
   theme_bw() + 
   facet_grid(Operator~unique_id) + 
-  labs(title = "Hamby set Barrel 5")
+  labs(title = "Hamby set Barrel 5") + 
+  scale_color_discrete(name = "Repetition #")
 ```
 
 
@@ -86,7 +87,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
   theme_bw() + 
   facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
-  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 1 (Bullet 1)")
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 1 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
 
 recap_long %>% 
   filter(Bullet == "Bullet 1" & unique_id == "BL 5-2") %>% 
@@ -94,7 +96,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
   theme_bw() + 
   facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
-  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 2 (Bullet 1)")
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 2 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
 
 
 recap_long %>% 
@@ -103,7 +106,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
   theme_bw() + 
   facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
-  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 3 (Bullet 1)")
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 3 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
 
 recap_long %>% 
   filter(Bullet == "Bullet 1" & unique_id == "BL 5-4") %>% 
@@ -111,7 +115,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
   theme_bw() + 
   facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
-  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 4 (Bullet 1)")
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 4 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
 
 recap_long %>% 
   filter(Bullet == "Bullet 1" & unique_id == "BL 5-5") %>% 
@@ -119,7 +124,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
   theme_bw() + 
   facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
-  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 5 (Bullet 1)")
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 5 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
 
 recap_long %>% 
   filter(Bullet == "Bullet 1" & unique_id == "BL 5-6") %>% 
@@ -127,7 +133,8 @@ recap_long %>%
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
   theme_bw() + 
   facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
-  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 6 (Bullet 1)")
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 6 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
 ```
 
 
