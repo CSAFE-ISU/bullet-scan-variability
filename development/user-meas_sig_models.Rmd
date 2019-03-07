@@ -136,7 +136,7 @@ b6_long %>% ggplot() +
 
 ```{r}
 b6_long %>% 
-  filter( unique_id == "BL 6-1") %>% 
+  filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
   geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
   geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
