@@ -251,14 +251,19 @@ To do this, we need to first grab a few full x3p files (from the server), to ren
 This first chunk of code should be commented out when working locally.  
 
 ```{r}
-#filenames <- list.files("/media/Sunny/CSAFE/User comparison scans/Round 1/Allison/Barrel 6", pattern = "*.x3p", full.names = T, recursive = T)
+#filenames <- list.files("/media/Sunny/CSAFE/User comparison scans/", pattern = "*.x3p", full.names = T, recursive = T)
 #barrel6_ex <- data.frame(source = filenames)
+#barrel6_ex <- barrel6_ex %>% 
+#  filter(str_detect(source, "Connor") == T | str_detect(source, "Anyesha") == T) %>% # grab only Connor and Anyesha's scans
+#  filter(str_detect(source, "Round 4") == F)
+
 #barrel6_ex <- barrel6_ex %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
 #  x3ptools::read_x3p(filename)
 #}))
 
+
 #barrel6_ex <- barrel6_ex %>% mutate(source = purrr::map_chr(as.character(source), .f = function(source){
-#  strsplit(source, "scans/")[[1]][2]
+#  strsplit(source, "//")[[1]][2]
 #}))
 
 
@@ -287,9 +292,19 @@ This first chunk of code should be commented out when working locally.
 #  ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][5], "Scan 1")
 #}))
 
+#barrel6_ex <- barrel6_ex %>%
+#  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+#                          Operator, "-", Machine, "-", Round))
+
+#user_gt <- read_csv("../data/user_gt.csv")
+#barrel6_ex <- left_join(barrel6_ex, user_gt)
+
+#barrel6_ex <- barrel6_ex %>% filter(unique_id == "BL 6-5")
+
+
 #head(barrel6_ex)
 
-##saveRDS(barrel6_ex, "../data/barrel6_example_x3p.rda")
+#saveRDS(barrel6_ex, "../data/barrel6_example_x3p.rda")
 ```
 
 
