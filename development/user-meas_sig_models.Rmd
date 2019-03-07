@@ -13,6 +13,9 @@ library(bulletxtrctr)
 
 First, we want to add our "unique_id" for each land to the signature data, so we can group them by that and align the lands. 
 ```{r}
+## can probably just read in user_pairwise after running through the user-meas_groundtruth file... :) 
+
+
 user_sigs <- readRDS("../data/user_meas_sigs.rda")
 user_sigs <- user_sigs %>% 
   mutate(scan_id = barrellandbullet) %>% 
@@ -129,6 +132,19 @@ b6_long %>% ggplot() +
   labs(title = "Hamby set Barrel 6")
 
 ```
+
+
+```{r}
+b6_long %>% 
+  filter( unique_id == "BL 6-1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 6")
+```
+
 
 
 
