@@ -21,9 +21,37 @@ user_crosscuts <- readRDS("../data/user_crosscuts.rda")
 user_crosscuts <- user_crosscuts %>% 
   mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
                           Operator, "-", Machine, "-", Round))
+```
+
+First, we are going to grab user_recaptures and get their signatures.  
+
+```{r, echo = F, warning = F, message= F}
+user_recaptures <- user_crosscuts %>%
+  filter(Round == "Round 4")
+
+user_recaptures <- user_recaptures %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+               adjust = 10, return_plot = TRUE)
+)
+
+user_recaptures <- user_recaptures %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+#head(user_recaptures)
 
 
+sigs_recap <- user_recaptures %>% select(-ccdata)
+saveRDS(sigs_recap, "../data/user_recapture_sigs.rda") 
+```
 
+
+```{r, echo = F, warning = F, message = F}
 ## We need to get use recapture 2 for Marco in Round 4, because one of the "Scan 1" files is missing.  
 ## So, we will grab everybody's "Scan 2" in Round 4.  
 round4 <- user_crosscuts %>% 
