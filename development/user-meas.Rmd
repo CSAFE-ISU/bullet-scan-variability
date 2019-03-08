@@ -85,6 +85,8 @@ user_crosscuts <- user_meas %>% mutate(
 
 user_crosscuts <- user_crosscuts %>% mutate(crosscut = ifelse(is.na(crosscut), median(crosscut, na.rm = T), crosscut))
 
+user_crosscuts_recap <- user_crosscuts %>% filter(Round == "Round 4")
+
 ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
   #x3pdat <- bulletxtrctr::check_x3p(x3p)
   x3p_df <- na.trim(ccdata)
@@ -115,7 +117,32 @@ user_crosscuts <- user_crosscuts %>% select(-x3p)
 #saveRDS(user_crosscuts, "../data/user_crosscuts.rda")
 ```
 
+A section to extract crosscuts for recapture data, forcing the crosscuts to be the same!  
+
+```{r}
+user_crosscuts_recap <- user_crosscuts_recap %>% 
+  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+                          Operator, "-", Machine, "-", Round))
+
+user_crosscuts_recap <- user_crosscuts_recap %>% 
+  group_by(scan_id) %>% 
+  mutate(crosscut = min(crosscut)) %>%
+  ungroup()
 
 
+user_crosscuts_recap <- user_crosscuts_recap %>% mutate(
+  ccdata = purrr::map2(.x = ccdata, .y = crosscut, 
+                       .f = ccdata_ten_crosscut)
+)
+
+user_crosscuts_recap <- user_crosscuts_recap %>% mutate(
+  ccdata = purrr::map(ccdata, .f = function(ccdata){
+    ccdata %>% group_by(x) %>% summarise(y = mean(y, na.rm = T), value = mean(value, na.rm = T))
+  })
+)
+
+user_crosscuts_recap <- user_crosscuts_recap %>% select(-x3p)
+saveRDS(user_crosscuts_recap, "../data/user_crosscuts_recap.rda")
+```
 
 

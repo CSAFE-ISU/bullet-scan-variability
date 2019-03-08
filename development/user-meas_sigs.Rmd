@@ -27,7 +27,7 @@ First, we are going to grab user_recaptures and get their signatures.
 
 ```{r, echo = F, warning = F, message= F}
 user_recaptures <- user_crosscuts %>%
-  filter(Round == "Round 4") 
+  filter(Round == "Round 4")
 
 user_recaptures <- user_recaptures %>% mutate(
   grooves = ccdata %>% 
@@ -51,11 +51,7 @@ saveRDS(sigs_recap, "../data/user_recapture_sigs.rda")
 
 #### NOW DO THE SAME THING BUT FORCING CROSSCUTS TO BE THE SAME  
 
-recap_force_cc <- user_recaptures %>% 
-  select(-grooves, -sigs) %>%
-  group_by(scan_id) %>% 
-  mutate(crosscut = min(crosscut)) %>%
-  ungroup()
+recap_force_cc <- readRDS("../data/user_crosscuts_recap.rda")
 
 
 recap_force_cc <- recap_force_cc %>% mutate(
