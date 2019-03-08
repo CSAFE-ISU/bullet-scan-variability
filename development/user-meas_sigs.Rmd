@@ -27,7 +27,7 @@ First, we are going to grab user_recaptures and get their signatures.
 
 ```{r, echo = F, warning = F, message= F}
 user_recaptures <- user_crosscuts %>%
-  filter(Round == "Round 4")
+  filter(Round == "Round 4") 
 
 user_recaptures <- user_recaptures %>% mutate(
   grooves = ccdata %>% 
@@ -45,9 +45,37 @@ user_recaptures <- user_recaptures %>% mutate(
 )
 #head(user_recaptures)
 
-
 sigs_recap <- user_recaptures %>% select(-ccdata)
 saveRDS(sigs_recap, "../data/user_recapture_sigs.rda") 
+
+
+#### NOW DO THE SAME THING BUT FORCING CROSSCUTS TO BE THE SAME  
+
+recap_force_cc <- user_recaptures %>% 
+  select(-grooves, -sigs) %>%
+  group_by(scan_id) %>% 
+  mutate(crosscut = min(crosscut)) %>%
+  ungroup()
+
+
+recap_force_cc <- recap_force_cc %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+               adjust = 10, return_plot = TRUE)
+)
+
+recap_force_cc <- recap_force_cc %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+
+recap_force_cc <- recap_force_cc %>% select(-ccdata)
+saveRDS(recap_force_cc, "../data/user_recapture_force_cc.rda") 
+
 ```
 
 
