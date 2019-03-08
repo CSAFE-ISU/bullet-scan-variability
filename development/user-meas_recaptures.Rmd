@@ -144,22 +144,123 @@ To do this, we need to re-do the "signature" process on the server. "user-meas_s
 
 ```{r}
 recap_force_cc <- readRDS("../data/user_recapture_force_cc.rda")
-recap_force_cc <- recap_force_cc %>% 
-  select(-sigs) %>% 
-  group_by(scan_id) %>% 
-  mutate(crosscut = min(crosscut)) %>%
-  ungroup() %>% 
-  mutate(sigs = purrr::map2(
-    .x = ccdata, .y = grooves, 
-    .f = function(x,y) {
-      cc_get_signature(
-        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03
-      )
-    }
-  ))
+head(recap_force_cc)
+user_gt <- read_csv("../data/user_gt.csv")
+recap_force_cc <- left_join(recap_force_cc, user_gt)
 
+
+recap_force_cc <- recap_force_cc %>% 
+  mutate(rep_id = paste0(scan_id, "-", Scan)) %>%
+  select(-grooves) %>%
+  mutate(sigs = purrr::map(sigs, .f = function(sigs){
+    data.frame(sigs)
+  }))
+
+
+recap_force_long <- recap_force_cc %>% unnest(sigs)
 
 ```
+
+
+Just as before, let's just get an initial sense for recaptures with all operators, all lands.  
+```{r}
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.3) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 5") + 
+  scale_color_discrete(name = "Repetition #")
+```
+
+
+
+```{r}
+recap_force_cc %>% group_by(scan_id) %>% summarize(unique_id = unique_id[1], min_cut = min(crosscut), max_cut = max(crosscut), ncuts = n_distinct(crosscut)) %>% arrange(unique_id)
+```
+
+
+
+```{r}
+recap_force_mses <- recap_force_long %>% 
+  group_by(scan_id, x) %>% 
+  mutate(rep_mean_byx = mean(sig, na.rm = T), sqerr = (sig - rep_mean_byx)^2) %>%
+  ungroup() %>%
+  group_by(scan_id) %>% 
+  nest(x:sqerr, .key = "sigs") %>%
+  mutate(recap_mse = purrr::map_dbl(sigs, .f = function(sigs){
+    sqrt(sum(sigs$sqerr, na.rm = T))/length(is.na(sigs$sqerr))
+  })) %>% 
+  select(scan_id, recap_mse)
+
+recap_force_long <- left_join(recap_force_long, recap_force_mses, by = "scan_id")
+recap_force_long <- recap_force_long %>% 
+  group_by(scan_id) %>% 
+  mutate(Oper_MSE = paste0(Operator, " (MSE = ", format(round(recap_mse, 4),scientific = F), ")")) %>%
+  ungroup()
+```
+
+
+```{r}
+
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1" & unique_id == "BL 5-1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
+  theme_bw() + 
+  facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 1 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
+
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1" & unique_id == "BL 5-2") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
+  theme_bw() + 
+  facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 2 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
+
+
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1" & unique_id == "BL 5-3") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
+  theme_bw() + 
+  facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 3 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
+
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1" & unique_id == "BL 5-4") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
+  theme_bw() + 
+  facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 4 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
+
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1" & unique_id == "BL 5-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
+  theme_bw() + 
+  facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 5 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
+
+recap_force_long %>% 
+  filter(Bullet == "Bullet 1" & unique_id == "BL 5-6") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.5) + 
+  theme_bw() + 
+  facet_wrap(~Machine+Oper_MSE, nrow = 2) + 
+  labs(title = "Immediate Recaptures: Hamby set Barrel 5, Land 6 (Bullet 1)") + 
+  scale_color_discrete(name = "Repetition #")
+```
+
+
 
 
 

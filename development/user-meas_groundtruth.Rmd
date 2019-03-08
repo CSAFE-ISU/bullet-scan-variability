@@ -26,6 +26,7 @@ user_rfscores <- user_rfscores %>%
                     "Operator_S2", "Machine_S2", "Round_S2"), sep = "-")
 
 head(user_rfscores)
+user_rfscores <- user_rfscores %>% filter(Round_S1 != "Round 0" & Round_S2 != "Round 0")
 
 ```
 
@@ -132,7 +133,7 @@ I subsetted these wrong. I will need to go back and re-do some of this with his 
 ```{r, echo = F, warning = F, message = F}
 user_rfscores %>%
   filter(Operator_S1 == "Allison" & Operator_S2 == "Marco") %>% 
-  filter(Barrel_S1 == "Barrel 6") %>% 
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>% 
   filter(Bullet_S1 == "Bullet 1" & Round_S1 == "Round 1") %>% 
   ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
   geom_tile() +
@@ -159,12 +160,6 @@ user_rfscores %>%
   #xlab("Land A") +
   #ylab("Land B") +
   theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
-```
-
-
-```{r, echo = F, warning = F, message = F}
-connor_rfscores <- user_rfscores 
-
 ```
 
 
@@ -203,6 +198,10 @@ user_lands <- user_lands %>% mutate(scan_id = land) %>% separate(land, into = c(
 
 head(user_lands)
 
+#old_gt <- read_csv("../data/user_gt.csv") ## without Marco's... need to add his GT in. 
+#user_lands <- left_join(user_lands, old_gt)
+#user_lands
+
 write_csv(user_lands, path = "../data/user_gt.csv", col_names = TRUE) 
 ```
 
@@ -227,7 +226,7 @@ for (i in 1:nrow(user_mat)){
 
 user_mat <- as.data.frame(user_mat)
 user_mat$land1 <- rownames(user_mat)
-user_mat <- user_mat %>% gather(1:246, key = "land2", value = "ground_truth")
+user_mat <- user_mat %>% gather(1:270, key = "land2", value = "ground_truth")
 
 head(user_mat)
 user_gt <- user_gt %>% mutate(land1 = scan_id, land2 = scan_id)
