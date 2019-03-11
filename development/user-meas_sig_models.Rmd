@@ -132,8 +132,7 @@ b6_long %>% ggplot() +
 
 ```{r}
 b6_long %>% 
-  filter( unique_id == "BL 6-4") %>% 
-  filter(Operator == "Carley") %>%
+  filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
   geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
   geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
@@ -324,10 +323,6 @@ This next chunk of code should be commented out when working on the server!!
 ```{r}
 barrel6_x3p <- readRDS("../data/barrel6_example_x3p.rda")
 
-## give it a scan id 
-barrel6_x3p <- barrel6_x3p %>% 
-  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
-                          Operator, "-", Machine, "-", Round))
 
 ## add on the correct unique_id
 user_gt <- read_csv("../data/user_gt.csv")
@@ -335,38 +330,27 @@ barrel6_x3p <- left_join(barrel6_x3p, user_gt)
 
 
 ## grab the crosscut values
-user_crosscuts <- readRDS("../data/user_crosscuts.rda")
+x3p_crosscuts <- readRDS("../data/user_crosscuts.rda")
 
-user_crosscuts <- user_crosscuts %>% 
+x3p_crosscuts <- x3p_crosscuts %>% 
   mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
                           Operator, "-", Machine, "-", Round))
 
-## We need to get use recapture 2 for Marco in Round 4, because one of the "Scan 1" files is missing.  
-## So, we will grab everybody's "Scan 2" in Round 4.  
-round4 <- user_crosscuts %>% 
-  filter(Round == "Round 4") %>%
-  filter(Scan == "Scan 2") %>%
-  mutate(Scan = "Scan 1")
-
-user_crosscuts <- user_crosscuts %>% 
-  filter(Round != "Round 4") %>%
-  filter(Round != "Round 0")
-
-user_crosscuts <- rbind(user_crosscuts, round4)
-user_crosscuts <- left_join(user_crosscuts, user_gt)
-## now, we basically want a data frame that has an x3p file with a bunch of crosscut values (and operator values).  
-
-barrel6_x3p <- barrel6_x3p %>% 
-  filter(Bullet == "Bullet 1") %>%
-  select(x3p, unique_id)
-head(barrel6_x3p)
-user_crosscuts <- user_crosscuts %>% 
-  select(Operator, crosscut, scan_id, unique_id) %>% 
-  nest(-unique_id)
-
-barrel6_x3p <- left_join(barrel6_x3p, user_crosscuts)
+barrel6_x3p <- left_join(barrel6_x3p, x3p_crosscuts)
 head(barrel6_x3p)
 
+barrel6_x3p <- barrel6_x3p %>% mutate(scan_label = paste0(unique_id, "-",
+                                                          Bullet, "-", Operator,"-",
+                                                          Machine, "-", Round))
+
+plot_crosscut_x3p <- function(datafile, scan_num){
+  x3p <- datafile$x3p[[scan_num]]
+  filename <- str_replace_all(paste0("../images/", datafile$scan_label[scan_num], ".png"), " ", "")
+  x3p_line <- x3p_add_hline(x3p, yintercept = datafile$crosscut[scan_num], size = 5, color = "white")
+  image_x3p(x3p_line, file = filename, size = c(3500, 1500), zoom = 0.5)
+}
+
+plot_crosscut_x3p(barrel6_x3p, 1) # we can just do this for each one! 
 
 ```
 
