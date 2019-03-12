@@ -355,6 +355,34 @@ plot_crosscut_x3p(barrel6_x3p, 1) # we can just do this for each one!
 ```
 
 
+Now, we want to grab these and look at the signatures that line up with them to see if any of the drastic striae we see are due to the crosscut location.  
+```{r}
+barrel6_x3p <- left_join(barrel6_x3p, barrel6land5)
+
+barrel6_long <- barrel6_x3p %>% unnest(sigs)
+which.max(barrel6_long$sig)
+sig_id <- barrel6_long[28313,]$scan_id
+
+barrel6_x3p %>%
+  unnest(sigs_aligned) %>%
+  mutate(sig_interest = ifelse(scan_id == sig_id, 1, 0)) %>%
+  ggplot() + geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator))) + 
+  geom_line(aes(x = x, y = sig1), color = "black") + 
+    theme_bw() +
+  facet_grid(Round~Bullet)
+
+
+# we can see there is a spike - perhaps due to crosscut being grabbed in the breakoff.
+# let's add that to an x3p image
+sig_breakoff <- barrel6_x3p %>% filter(scan_id == sig_id)
+sig_breakoff <- x3p_add_vline(sig_breakoff$x3p[[1]], barrel6_long[28313,]$x, color = "white", size = 10)
+sig_breakoff <- x3p_add_hline(sig_breakoff, barrel6_long[28313,]$y, color = "white", size = 5)
+image_x3p(sig_breakoff, file = "../images/highest-crosscut-x3p.png", size = c(3500, 1500), zoom = 0.5)
+
+```
+
+
+
 
 ## Next, we want to look at autocorrelations of signatures!  
 
@@ -440,3 +468,12 @@ user_acf %>%
   scale_color_discrete(name = "Barrel-Land ID") + 
   labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land, lags under 50")
 ```
+
+
+
+
+
+
+
+
+
