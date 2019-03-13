@@ -1,0 +1,664 @@
+---
+title: "user-meas pairwise models"
+output: html_document
+---
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(gridExtra)
+library(lme4)
+library(bulletxtrctr)
+```
+
+
+First, we want to add our "unique_id" for each land to the signature data, so we can group them by that and align the lands. 
+```{r}
+user_sigs <- readRDS("../data/user_meas_sigs.rda")
+head(user_sigs)
+user_sigs <- user_sigs %>% 
+  select(-barrellandbullet, -barrelland) %>% 
+  select(scan_id, sigs)
+head(user_sigs)
+
+user_gt <- read_csv("../data/user_gt.csv")
+user_sigs <- full_join(user_sigs, user_gt)
+
+user_sigs <- user_sigs %>% filter(Round != "Round 0")
+```
+
+
+## BARREL 6 VIZ OF SIGNATURES  
+
+```{r}
+barrel6land1 <- user_sigs %>% filter(unique_id == "BL 6-1")
+barrel6land1 <- barrel6land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land1$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+b6l1_long <- barrel6land1 %>% unnest(sigs_aligned)
+
+b6l1_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator))) + 
+  geom_line(aes(x = x, y = sig1)) + 
+  theme_bw() 
+
+barrel6land2 <- user_sigs %>% filter(unique_id == "BL 6-2")
+barrel6land2 <- barrel6land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land2$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+barrel6land3 <- user_sigs %>% filter(unique_id == "BL 6-3")
+barrel6land3 <- barrel6land3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land3$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel6land4 <- user_sigs %>% filter(unique_id == "BL 6-4")
+barrel6land4 <- barrel6land4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land4$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel6land5 <- user_sigs %>% filter(unique_id == "BL 6-5")
+barrel6land5 <- barrel6land5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land5$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel6land6 <- user_sigs %>% filter(unique_id == "BL 6-6")
+barrel6land6 <- barrel6land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel6land6$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+barrel6 <- rbind(barrel6land1, barrel6land2, barrel6land3, barrel6land4, barrel6land5, barrel6land6)
+saveRDS(barrel6, "../data/user_aligned_sigs.rda")
+
+
+b6_long <- barrel6 %>% unnest(sigs_aligned)
+head(b6_long)
+
+
+b6_long %>% 
+  #filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 6")
+
+
+b6_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 6")
+
+
+b6_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 6")
+
+```
+
+
+```{r}
+b6_long %>% 
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 6")
+```
+
+
+
+I now want to calculate an average signature height for each $x$ location $m$ for each barrel-land signature, and look at the patterns of error from that mean.  
+```{r}
+sig_errors <- b6_long %>%
+  group_by(unique_id, x) %>%
+  mutate(mean_sig = mean(sig2, na.rm = T), 
+         sig_error = sig2 - mean_sig) %>%
+  ungroup()
+
+mean_plot_65 <- sig_errors %>% 
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 5") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_65 <- sig_errors %>%
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+
+grid.arrange(mean_plot_65, error_plot_65, nrow = 2)
+
+```
+
+
+Let's look at each of them for Barrel 6!  
+```{r}
+mean_plot_61 <- sig_errors %>% 
+  filter( unique_id == "BL 6-1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 1") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_61 <- sig_errors %>%
+  filter( unique_id == "BL 6-1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+  
+mean_plot_62 <- sig_errors %>% 
+  filter( unique_id == "BL 6-2") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 2") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_62 <- sig_errors %>%
+  filter( unique_id == "BL 6-2") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+
+
+mean_plot_63 <- sig_errors %>% 
+  filter( unique_id == "BL 6-3") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 3") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_63 <- sig_errors %>%
+  filter( unique_id == "BL 6-3") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+
+
+mean_plot_64 <- sig_errors %>% 
+  filter( unique_id == "BL 6-4") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 4") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_64 <- sig_errors %>%
+  filter( unique_id == "BL 6-4") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+
+mean_plot_65 <- sig_errors %>% 
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 5") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_65 <- sig_errors %>%
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+
+mean_plot_66 <- sig_errors %>% 
+  filter( unique_id == "BL 6-6") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 6") + 
+  scale_color_discrete(name = "Operator")
+
+error_plot_66 <- sig_errors %>%
+  filter( unique_id == "BL 6-6") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Operator")
+
+
+grid.arrange(mean_plot_61, error_plot_61, nrow = 2)
+grid.arrange(mean_plot_62, error_plot_62, nrow = 2)
+grid.arrange(mean_plot_63, error_plot_63, nrow = 2)
+grid.arrange(mean_plot_64, error_plot_64, nrow = 2)
+grid.arrange(mean_plot_65, error_plot_65, nrow = 2)
+grid.arrange(mean_plot_66, error_plot_66, nrow = 2)
+
+
+
+```
+
+
+
+Some really weird stuff is going on with Allison's land 3 and 4... let's pull her out and look at that.  
+
+```{r}
+sig_errors %>% 
+  filter(Operator == "Allison") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  facet_grid(Round~unique_id) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6")
+```
+
+## BARREL 5 VIZ OF SIGNATURES  
+
+
+```{r}
+barrel5land1 <- user_sigs %>% filter(unique_id == "BL 5-1")
+barrel5land1 <- barrel5land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land1$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+barrel5land2 <- user_sigs %>% filter(unique_id == "BL 5-2")
+barrel5land2 <- barrel5land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land2$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+barrel5land3 <- user_sigs %>% filter(unique_id == "BL 5-3")
+barrel5land3 <- barrel5land3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land3$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel5land4 <- user_sigs %>% filter(unique_id == "BL 5-4")
+barrel5land4 <- barrel5land4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land4$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel5land5 <- user_sigs %>% filter(unique_id == "BL 5-5")
+barrel5land5 <- barrel5land5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land5$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+barrel5land6 <- user_sigs %>% filter(unique_id == "BL 5-6")
+barrel5land6 <- barrel5land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(barrel5land6$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x <- 1:(dim(lands)[1])
+  lands
+}))
+
+```
+
+```{r}
+barrel5 <- rbind(barrel5land1, barrel5land2, barrel5land3, barrel5land4, barrel5land5, barrel5land6)
+
+b5_long <- barrel5 %>% unnest(sigs_aligned)
+head(b5_long)
+
+
+b5_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 5")
+
+
+b5_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 5")
+
+
+b5_long %>% ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(Operator~unique_id) + 
+  labs(title = "Hamby set Barrel 5")
+
+```
+
+
+```{r}
+b5_long %>% 
+  filter( unique_id == "BL 5-4") %>% 
+  filter(Operator == "Carley") %>%
+  ggplot() + 
+  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(title = "Hamby set Barrel 6")
+```
+
+
+
+
+## Now, visualizing crosscuts on top of an image.  
+
+To do this, we need to first grab a few full x3p files (from the server), to render locally on my machine (because image_x3p doesn't work on the server).
+
+This first chunk of code should be commented out when working locally.  
+
+```{r}
+#filenames <- list.files("/media/Sunny/CSAFE/User comparison scans/", pattern = "*.x3p", full.names = T, recursive = T)
+#barrel6_ex <- data.frame(source = filenames)
+#barrel6_ex <- barrel6_ex %>% 
+#  filter(str_detect(source, "Connor") == T | str_detect(source, "Anyesha") == T) %>% # grab only Connor and Anyesha's scans
+#  filter(str_detect(source, "Round 4") == F)
+
+#barrel6_ex <- barrel6_ex %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+#  x3ptools::read_x3p(filename)
+#}))
+
+
+#barrel6_ex <- barrel6_ex %>% mutate(source = purrr::map_chr(as.character(source), .f = function(source){
+#  strsplit(source, "//")[[1]][2]
+#}))
+
+
+#barrel6_ex <- barrel6_ex %>% mutate(Round = purrr::map_chr(as.character(source), .f = function(source){
+#  strsplit(source, "/")[[1]][1]
+#}), 
+#Operator = purrr::map_chr(as.character(source), .f = function(source){
+#  op <- strsplit(source, "/")[[1]][2]
+#  strsplit(op, " ")[[1]][1]
+#}), 
+#source = factor(str_replace_all(source, ";", " -")),
+#Barrel = purrr::map_chr(as.character(source), .f = function(source){
+#  strsplit(source, " - ")[[1]][2]
+#}), 
+#Bullet = purrr::map_chr(as.character(source), .f = function(source){
+#  strsplit(source, " - ")[[1]][3]
+#}), 
+#Land = purrr::map_chr(as.character(source), .f = function(source){
+#  strsplit(source, " - ")[[1]][4]
+#}), 
+#Machine = purrr::map_chr(as.character(source), .f = function(source){
+#  mac <- ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][6], strsplit(source, " - ")[[1]][5]) 
+#  str_replace_all(mac, " ", "")
+#}), 
+#Scan = purrr::map_chr(as.character(source), .f = function(source){
+#  ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][5], "Scan 1")
+#}))
+
+#barrel6_ex <- barrel6_ex %>%
+#  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+#                          Operator, "-", Machine, "-", Round))
+
+#user_gt <- read_csv("../data/user_gt.csv")
+#barrel6_ex <- left_join(barrel6_ex, user_gt)
+
+#barrel6_ex <- barrel6_ex %>% filter(unique_id == "BL 6-5")
+
+
+#head(barrel6_ex)
+
+#saveRDS(barrel6_ex, "../data/barrel6_example_x3p.rda")
+```
+
+
+This next chunk of code should be commented out when working on the server!! 
+
+```{r}
+barrel6_x3p <- readRDS("../data/barrel6_example_x3p.rda")
+
+
+## add on the correct unique_id
+user_gt <- read_csv("../data/user_gt.csv")
+barrel6_x3p <- left_join(barrel6_x3p, user_gt)
+
+
+## grab the crosscut values
+x3p_crosscuts <- readRDS("../data/user_crosscuts.rda")
+
+x3p_crosscuts <- x3p_crosscuts %>% 
+  mutate(scan_id = paste0(Barrel, "-", Land, "-", Bullet, "-", 
+                          Operator, "-", Machine, "-", Round))
+
+barrel6_x3p <- left_join(barrel6_x3p, x3p_crosscuts)
+head(barrel6_x3p)
+
+barrel6_x3p <- barrel6_x3p %>% mutate(scan_label = paste0(unique_id, "-",
+                                                          Bullet, "-", Operator,"-",
+                                                          Machine, "-", Round))
+
+plot_crosscut_x3p <- function(datafile, scan_num){
+  x3p <- datafile$x3p[[scan_num]]
+  filename <- str_replace_all(paste0("../images/", datafile$scan_label[scan_num], ".png"), " ", "")
+  x3p_line <- x3p_add_hline(x3p, yintercept = datafile$crosscut[scan_num], size = 5, color = "white")
+  image_x3p(x3p_line, file = filename, size = c(3500, 1500), zoom = 0.5)
+}
+
+plot_crosscut_x3p(barrel6_x3p, 1) # we can just do this for each one! 
+
+```
+
+
+Now, we want to grab these and look at the signatures that line up with them to see if any of the drastic striae we see are due to the crosscut location.  
+```{r}
+barrel6_x3p <- left_join(barrel6_x3p, barrel6land5)
+
+barrel6_long <- barrel6_x3p %>% unnest(sigs)
+which.max(barrel6_long$sig)
+sig_id <- barrel6_long[28313,]$scan_id
+
+barrel6_x3p %>%
+  unnest(sigs_aligned) %>%
+  mutate(sig_interest = ifelse(scan_id == sig_id, 1, 0)) %>%
+  ggplot() + geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator))) + 
+  geom_line(aes(x = x, y = sig1), color = "black") + 
+    theme_bw() +
+  facet_grid(Round~Bullet)
+
+
+# we can see there is a spike - perhaps due to crosscut being grabbed in the breakoff.
+# let's add that to an x3p image
+sig_breakoff <- barrel6_x3p %>% filter(scan_id == sig_id)
+sig_breakoff <- x3p_add_vline(sig_breakoff$x3p[[1]], barrel6_long[28313,]$x, color = "white", size = 10)
+sig_breakoff <- x3p_add_hline(sig_breakoff, barrel6_long[28313,]$y, color = "white", size = 5)
+image_x3p(sig_breakoff, file = "../images/highest-crosscut-x3p.png", size = c(3500, 1500), zoom = 0.5)
+
+```
+
+
+
+
+## Next, we want to look at autocorrelations of signatures!  
+
+```{r, echo = F, warning = F, message = F}
+user_sigs <- readRDS("../data/user_meas_sigs.rda")
+user_sigs <- user_sigs %>% 
+  mutate(scan_id = barrellandbullet) %>% 
+  select(-barrellandbullet) %>% 
+  select(scan_id, sigs)
+head(user_sigs)
+
+user_gt <- read_csv("../data/user_gt.csv")
+user_sigs <- full_join(user_sigs, user_gt)
+
+head(user_sigs)
+
+
+user_acf <- user_sigs %>% 
+  select(scan_id, sigs, Barrel, Bullet, Operator, Machine, unique_id) %>%
+  mutate(acf = purrr::map(sigs, .f = function(sigs){
+    acf_obj <- acf(sigs$sig, lag.max = 200, type = "correlation", na.action = na.pass, plot = FALSE)
+    data.frame(lag = acf_obj$lag[,,1], acf = acf_obj$acf[,,1])
+  }))
+
+head(user_acf)
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 6") == T) %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_hline(yintercept = 0, color = "grey70") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land")
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 6") == T) %>% 
+  filter(lag < 50) %>%
+  ggplot() + 
+  geom_vline(xintercept = 5, color = "grey70") + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land, lags under 50")
+```
+
+
+
+```{r, echo = F, warning = F, message = F}
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 5") == T) %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_hline(yintercept = 0, color = "grey70") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land")
+
+user_acf %>% 
+  unnest(acf) %>%
+  filter(str_detect(unique_id, "BL 5") == T) %>% 
+  filter(lag < 50) %>%
+  ggplot() + 
+  geom_vline(xintercept = 5, color = "grey70") + 
+  geom_hline(yintercept = 0.95, color = "black") + 
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  scale_color_discrete(name = "Barrel-Land ID") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repetitions on each Barrel-Land, lags under 50")
+```
+
+
+
+
+
+
+
+
+
