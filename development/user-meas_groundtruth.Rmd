@@ -256,3 +256,21 @@ saveRDS(user_results, "../data/user_meas_pairwise.rda")
 
 
 
+Now we're going to add ground truth for which bullet scans are coming from: 
+
+```{r}
+bullets <- readRDS("../data/user_meas_sigs.rda")
+
+bullets <- bullets %>% filter(Round != "Round 0") 
+
+bullets <- bullets %>% mutate(bullet_id = paste0(Operator, "-", Round, "-", Barrel, "-", Bullet))
+
+bullets <- data.frame(bullet = unique(bullets$bullet_id))
+
+bullets <- bullets %>% mutate(bullet_id = bullet) %>% separate(bullet, into = c("Operator", "Round", "Barrel", "Bullet"), sep = "-")
+
+head(bullets)
+
+
+#write_csv(bullets, path = "../data/user_bullets_gt.csv", col_names = TRUE) 
+```
