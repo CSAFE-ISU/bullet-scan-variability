@@ -274,3 +274,13 @@ head(bullets)
 
 #write_csv(bullets, path = "../data/user_bullets_gt.csv", col_names = TRUE) 
 ```
+
+
+And, we want to add a blinded operator coding.  
+
+```{r}
+ops <- readRDS("../data/user_meas_sigs.rda")
+ops <- data.frame(Operator = unique(ops$Operator))
+#write_csv(ops, path = "../data/user_operators_blind.csv", col_names = TRUE)
+
+```
