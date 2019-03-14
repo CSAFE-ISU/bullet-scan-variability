@@ -38,7 +38,7 @@ subset_xs <- seq(1, max(sig_operator_grid$x_aligned), by = 100)
 
 sig_operator_grid <- sig_operator_grid %>% filter(x_aligned %in% subset_xs)
 
-sig_op_model <- lmer(sig2~fixed_BLm + (1|Bullet/unique_id) + (1|Operator/unique_id) + (1|Operator:Bullet), data = sig_operator_grid)
+sig_op_model <- lmer(sig2~fixed_BLm + (1|bullet_code/unique_id) + (1|Operator/unique_id) + (1|Operator:bullet_code), data = sig_operator_grid)
 summary(sig_op_model)
 vcov(sig_op_model)
 ```

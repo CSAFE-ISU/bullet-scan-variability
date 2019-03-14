@@ -9,6 +9,11 @@ library(gridExtra)
 library(lme4)
 ```
 
+
+NEED TO READ IN THE GROUND TRUTH BULLET CODES.  
+
+
+
 ```{r}
 pairwise_data <- readRDS("../data/user_meas_pairwise.rda")
 

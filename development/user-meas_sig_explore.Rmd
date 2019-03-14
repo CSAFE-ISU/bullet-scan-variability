@@ -24,6 +24,9 @@ user_gt <- read_csv("../data/user_gt.csv")
 user_sigs <- full_join(user_sigs, user_gt)
 
 user_sigs <- user_sigs %>% filter(Round != "Round 0")
+
+user_bullet_gt <- read_csv("../data/user_bullets_gt.csv")
+user_sigs <- left_join(user_sigs, user_bullet_gt)
 ```
 
 
@@ -316,6 +319,7 @@ grid.arrange(mean_plot_66, error_plot_66, nrow = 2)
 
 
 
+
 Some really weird stuff is going on with Allison's land 3 and 4... let's pull her out and look at that.  
 
 ```{r}
@@ -328,6 +332,149 @@ sig_errors %>%
   facet_grid(Round~unique_id) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6")
 ```
+
+
+I now want to look at things due to which bullet they originated from:  
+```{r}
+mean_plot_61_b <- sig_errors %>% 
+  filter( unique_id == "BL 6-1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 1") + 
+  scale_color_discrete(name = "Bullet ID")
+
+error_plot_61_b <- sig_errors %>%
+  filter( unique_id == "BL 6-1") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(bullet_code)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Bullet ID")
+  
+mean_plot_62_b <- sig_errors %>% 
+  filter( unique_id == "BL 6-2") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 2") + 
+  scale_color_discrete(name = "Bullet ID")
+
+error_plot_62_b <- sig_errors %>%
+  filter( unique_id == "BL 6-2") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(bullet_code)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Bullet ID")
+
+
+mean_plot_63_b <- sig_errors %>% 
+  filter( unique_id == "BL 6-3") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 3") + 
+  scale_color_discrete(name = "Bullet ID")
+
+error_plot_63_b <- sig_errors %>%
+  filter( unique_id == "BL 6-3") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(bullet_code)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Bullet ID")
+
+
+mean_plot_64_b <- sig_errors %>% 
+  filter( unique_id == "BL 6-4") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 4") + 
+  scale_color_discrete(name = "Bullet ID")
+
+error_plot_64_b <- sig_errors %>%
+  filter( unique_id == "BL 6-4") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(bullet_code)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Bullet ID")
+
+mean_plot_65_b <- sig_errors %>% 
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 5") + 
+  scale_color_discrete(name = "Bullet ID")
+
+error_plot_65_b <- sig_errors %>%
+  filter( unique_id == "BL 6-5") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(bullet_code)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Bullet ID")
+
+mean_plot_66_b <- sig_errors %>% 
+  filter( unique_id == "BL 6-6") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
+  theme_bw() + 
+  #facet_wrap(Bullet~unique_id, nrow = 2) + 
+  labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 6") + 
+  scale_color_discrete(name = "Bullet ID")
+
+error_plot_66_b <- sig_errors %>%
+  filter( unique_id == "BL 6-6") %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(bullet_code)), alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "black") + 
+  #facet_wrap(~unique_id, nrow = 2) + 
+  theme_bw() + 
+  labs(x = "x location", y = "Residual Height") + 
+  scale_color_discrete(name = "Bullet ID")
+
+
+grid.arrange(mean_plot_61_b, error_plot_61_b, nrow = 2)
+grid.arrange(mean_plot_62_b, error_plot_62_b, nrow = 2)
+grid.arrange(mean_plot_63_b, error_plot_63_b, nrow = 2)
+grid.arrange(mean_plot_64_b, error_plot_64_b, nrow = 2)
+grid.arrange(mean_plot_65_b, error_plot_65_b, nrow = 2)
+grid.arrange(mean_plot_66_b, error_plot_66_b, nrow = 2)
+
+
+
+```
+
+
+
+
+
+
 
 ## BARREL 5 VIZ OF SIGNATURES  
 
