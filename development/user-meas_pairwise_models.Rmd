@@ -10,10 +10,10 @@ library(lme4)
 ```
 
 ```{r}
-user_results <- readRDS("../data/user_meas_pairwise.rda")
+pairwise_data <- readRDS("../data/user_meas_pairwise.rda")
 
 
-user_results <- user_results %>% 
+pairwise_data <- pairwise_data %>% 
   mutate(operator_truth = ifelse(Operator_S1 == Operator_S2, 
                                  "Same Operator", "Diff Operator"), 
          bullet_truth = ifelse(Bullet_S1 == Bullet_S2,
@@ -22,11 +22,11 @@ user_results <- user_results %>%
                                 "Same Machine", "Diff Machine"),
          round_truth = ifelse(Round_S1 == Round_S2,
                               "Same Round", "Diff Round"))
-head(user_results)
+head(pairwise_data)
 ```
 
 ```{r}
-user_results %>% 
+pairwise_data %>% 
   ggplot() + geom_density(aes(x = rfscore, fill = factor(ground_truth)), alpha = 0.5) + 
   theme_bw() + 
   scale_fill_manual(name = "", breaks = c("Different Source", "Same Source"), 
@@ -39,7 +39,7 @@ user_results %>%
 
 
 ```{r}
-user_results %>% 
+pairwise_data %>% 
   ggplot() + geom_density(aes(x = rfscore, fill = factor(operator_truth)), alpha = 0.5) + 
   theme_bw() + 
   scale_fill_manual(name = "", breaks = c("Diff Operator", "Same Operator"), 
@@ -52,16 +52,20 @@ user_results %>%
 
 
 ```{r}
-user_results_b6 <- user_results %>%
+pairwise_data_b6 <- pairwise_data %>%
   filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>%
-  filter(ground_truth == "Same Source") %>%
-  filter(Bullet_S1 == "Bullet 1" & Bullet_S2 == "Bullet 1")
+  filter(ground_truth == "Same Source") 
 
 
-ind_model <- lmer(rfscore~ (1|operator_truth) + (1|machine_truth),
-                  data = user_results_b6)
+pair_op_model <- lmer(rfscore ~ unique_id_S1 + (1|bullet_truth/unique_id_S1) + 
+                        (1|operator_truth/unique_id_S1) + (1|machine_truth/unique_id_S1) + 
+                        (1|operator_truth:bullet_truth) + (1|machine_truth:bullet_truth),
+                  data = pairwise_data_b6)
 
+pair_op_base <- lmer(rfscore~unique_id_S1 + (1|bullet_truth/unique_id_S1), 
+                      data = pairwise_data_b6)
 
+summary(pair_op_model)
 ```
 
 
