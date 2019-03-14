@@ -35,15 +35,15 @@ barrel6land1 <- barrel6land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel6land1$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
 b6l1_long <- barrel6land1 %>% unnest(sigs_aligned)
 
 b6l1_long %>% ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator))) + 
-  geom_line(aes(x = x, y = sig1)) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator))) + 
+  geom_line(aes(x = x_aligned, y = sig1)) + 
   theme_bw() 
 
 barrel6land2 <- user_sigs %>% filter(unique_id == "BL 6-2")
@@ -51,7 +51,7 @@ barrel6land2 <- barrel6land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel6land2$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -61,7 +61,7 @@ barrel6land3 <- barrel6land3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel6land3$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -70,7 +70,7 @@ barrel6land4 <- barrel6land4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel6land4$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -79,7 +79,7 @@ barrel6land5 <- barrel6land5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel6land5$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -88,7 +88,7 @@ barrel6land6 <- barrel6land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel6land6$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -107,24 +107,24 @@ head(b6_long)
 b6_long %>% 
   #filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_wrap(~unique_id, nrow = 2) + 
   labs(title = "Hamby set Barrel 6")
 
 
 b6_long %>% ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_grid(Operator~unique_id) + 
   labs(title = "Hamby set Barrel 6")
 
 
 b6_long %>% ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_grid(Operator~unique_id) + 
   labs(title = "Hamby set Barrel 6")
@@ -136,8 +136,8 @@ b6_long %>% ggplot() +
 b6_long %>% 
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(title = "Hamby set Barrel 6")
@@ -148,7 +148,7 @@ b6_long %>%
 I now want to calculate an average signature height for each $x$ location $m$ for each barrel-land signature, and look at the patterns of error from that mean.  
 ```{r}
 sig_errors <- b6_long %>%
-  group_by(unique_id, x) %>%
+  group_by(unique_id, x_aligned) %>%
   mutate(mean_sig = mean(sig2, na.rm = T), 
          sig_error = sig2 - mean_sig) %>%
   ungroup()
@@ -156,8 +156,8 @@ sig_errors <- b6_long %>%
 mean_plot_65 <- sig_errors %>% 
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 5") + 
@@ -166,7 +166,7 @@ mean_plot_65 <- sig_errors %>%
 error_plot_65 <- sig_errors %>%
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -183,8 +183,8 @@ Let's look at each of them for Barrel 6!
 mean_plot_61 <- sig_errors %>% 
   filter( unique_id == "BL 6-1") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 1") + 
@@ -193,7 +193,7 @@ mean_plot_61 <- sig_errors %>%
 error_plot_61 <- sig_errors %>%
   filter( unique_id == "BL 6-1") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -203,8 +203,8 @@ error_plot_61 <- sig_errors %>%
 mean_plot_62 <- sig_errors %>% 
   filter( unique_id == "BL 6-2") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 2") + 
@@ -213,7 +213,7 @@ mean_plot_62 <- sig_errors %>%
 error_plot_62 <- sig_errors %>%
   filter( unique_id == "BL 6-2") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -224,8 +224,8 @@ error_plot_62 <- sig_errors %>%
 mean_plot_63 <- sig_errors %>% 
   filter( unique_id == "BL 6-3") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 3") + 
@@ -234,7 +234,7 @@ mean_plot_63 <- sig_errors %>%
 error_plot_63 <- sig_errors %>%
   filter( unique_id == "BL 6-3") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -245,8 +245,8 @@ error_plot_63 <- sig_errors %>%
 mean_plot_64 <- sig_errors %>% 
   filter( unique_id == "BL 6-4") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 4") + 
@@ -255,7 +255,7 @@ mean_plot_64 <- sig_errors %>%
 error_plot_64 <- sig_errors %>%
   filter( unique_id == "BL 6-4") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -265,8 +265,8 @@ error_plot_64 <- sig_errors %>%
 mean_plot_65 <- sig_errors %>% 
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 5") + 
@@ -275,7 +275,7 @@ mean_plot_65 <- sig_errors %>%
 error_plot_65 <- sig_errors %>%
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -285,8 +285,8 @@ error_plot_65 <- sig_errors %>%
 mean_plot_66 <- sig_errors %>% 
   filter( unique_id == "BL 6-6") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 6") + 
@@ -295,7 +295,7 @@ mean_plot_66 <- sig_errors %>%
 error_plot_66 <- sig_errors %>%
   filter( unique_id == "BL 6-6") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -322,8 +322,8 @@ Some really weird stuff is going on with Allison's land 3 and 4... let's pull he
 sig_errors %>% 
   filter(Operator == "Allison") %>% 
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Bullet)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = mean_sig), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   facet_grid(Round~unique_id) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6")
@@ -338,7 +338,7 @@ barrel5land1 <- barrel5land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel5land1$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -348,7 +348,7 @@ barrel5land2 <- barrel5land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel5land2$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -358,7 +358,7 @@ barrel5land3 <- barrel5land3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel5land3$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -367,7 +367,7 @@ barrel5land4 <- barrel5land4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel5land4$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -376,7 +376,7 @@ barrel5land5 <- barrel5land5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel5land5$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -385,7 +385,7 @@ barrel5land6 <- barrel5land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
   align <- sig_align(barrel5land6$sigs[[1]]$sig, row$sig)
   lands <- align$lands
   lands <- lands[!is.na(lands$sig1),]
-  lands$x <- 1:(dim(lands)[1])
+  lands$x_aligned <- 1:(dim(lands)[1])
   lands
 }))
 
@@ -399,24 +399,24 @@ head(b5_long)
 
 
 b5_long %>% ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_wrap(~unique_id, nrow = 2) + 
   labs(title = "Hamby set Barrel 5")
 
 
 b5_long %>% ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_grid(Operator~unique_id) + 
   labs(title = "Hamby set Barrel 5")
 
 
 b5_long %>% ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_grid(Operator~unique_id) + 
   labs(title = "Hamby set Barrel 5")
@@ -429,8 +429,8 @@ b5_long %>%
   filter( unique_id == "BL 5-4") %>% 
   filter(Operator == "Carley") %>%
   ggplot() + 
-  geom_line(aes(x = x, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
-  geom_line(aes(x = x, y = sig1), alpha = 0.8) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(title = "Hamby set Barrel 6")

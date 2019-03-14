@@ -15,4 +15,27 @@ First, we want to read in the data. These are signatures that have already been 
 
 ```{r}
 signature_data <- readRDS("../data/user_aligned_sigs.rda")
+
+signature_data <- signature_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x)) 
 ```
+
+Next, we want to get a grid of data from the pilot study that we can use to get initial estimates of operator variability. 
+
+```{r}
+sig_operator_grid <- signature_data %>% 
+  filter(Round != "Round 4") %>%
+  filter(Operator != "Marco" & Operator != "Jozef") %>%
+  filter(Machine == "Sneox1") %>%
+  mutate(fixed_BLm = as.factor(fixed_BLm), 
+         Operator = as.factor(Operator), 
+         unique_id = as.factor(unique_id))
+
+head(sig_operator_grid)
+
+sig_op_model <- lmer(sig2~fixed_BLm + (1|Operator/unique_id), data = sig_operator_grid)
+summary(sig_op_model)
+```
+
+
