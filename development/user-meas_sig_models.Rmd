@@ -18,7 +18,7 @@ signature_data <- readRDS("../data/user_aligned_sigs.rda")
 
 signature_data <- signature_data %>% 
   unnest(sigs_aligned) %>% 
-  mutate(fixed_BLm = paste0(unique_id, "-", x)) 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned)) 
 ```
 
 Next, we want to get a grid of data from the pilot study that we can use to get initial estimates of operator variability. 
@@ -34,8 +34,13 @@ sig_operator_grid <- signature_data %>%
 
 head(sig_operator_grid)
 
-sig_op_model <- lmer(sig2~fixed_BLm + (1|Operator/unique_id), data = sig_operator_grid)
+subset_xs <- seq(1, max(sig_operator_grid$x_aligned), by = 100)
+
+sig_operator_grid <- sig_operator_grid %>% filter(x_aligned %in% subset_xs)
+
+sig_op_model <- lmer(sig2~fixed_BLm + (1|Bullet/unique_id) + (1|Operator/unique_id) + (1|Operator:Bullet), data = sig_operator_grid)
 summary(sig_op_model)
+vcov(sig_op_model)
 ```
 
 
