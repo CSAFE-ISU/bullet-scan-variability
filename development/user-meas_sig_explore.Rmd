@@ -27,6 +27,9 @@ user_sigs <- user_sigs %>% filter(Round != "Round 0")
 
 user_bullet_gt <- read_csv("../data/user_bullets_gt.csv")
 user_sigs <- left_join(user_sigs, user_bullet_gt)
+
+user_ops <- read_csv("../data/user_operators_blind.csv")
+user_sigs <- left_join(user_sigs, user_ops)
 ```
 
 
@@ -45,7 +48,7 @@ barrel6land1 <- barrel6land1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
 b6l1_long <- barrel6land1 %>% unnest(sigs_aligned)
 
 b6l1_long %>% ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator))) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code))) + 
   geom_line(aes(x = x_aligned, y = sig1)) + 
   theme_bw() 
 
@@ -110,7 +113,7 @@ head(b6_long)
 b6_long %>% 
   #filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   facet_wrap(~unique_id, nrow = 2) + 
@@ -118,10 +121,10 @@ b6_long %>%
 
 
 b6_long %>% ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
-  facet_grid(Operator~unique_id) + 
+  facet_grid(operator_code~unique_id) + 
   labs(title = "Hamby set Barrel 6")
 
 
@@ -129,7 +132,7 @@ b6_long %>% ggplot() +
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Machine)), alpha = 0.8) + 
   geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
-  facet_grid(Operator~unique_id) + 
+  facet_grid(operator_code~unique_id) + 
   labs(title = "Hamby set Barrel 6")
 
 ```
@@ -139,11 +142,12 @@ b6_long %>% ggplot() +
 b6_long %>% 
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
-  labs(title = "Hamby set Barrel 6")
+  labs(title = "Hamby set Barrel 6") + 
+  scale_color_discrete(name = "Operator")
 ```
 
 
@@ -159,22 +163,22 @@ sig_errors <- b6_long %>%
 mean_plot_65 <- sig_errors %>% 
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
   labs(x = "x location", y = "Signature Height", title = "Hamby set Barrel 6, Land 5") + 
-  scale_color_discrete(name = "Operator")
+  scale_color_discrete(name = "")
 
 error_plot_65 <- sig_errors %>%
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
   labs(x = "x location", y = "Residual Height") + 
-  scale_color_discrete(name = "Operator")
+  scale_color_discrete(name = "")
 
 grid.arrange(mean_plot_65, error_plot_65, nrow = 2)
 
@@ -186,7 +190,7 @@ Let's look at each of them for Barrel 6!
 mean_plot_61 <- sig_errors %>% 
   filter( unique_id == "BL 6-1") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
@@ -196,7 +200,7 @@ mean_plot_61 <- sig_errors %>%
 error_plot_61 <- sig_errors %>%
   filter( unique_id == "BL 6-1") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -206,7 +210,7 @@ error_plot_61 <- sig_errors %>%
 mean_plot_62 <- sig_errors %>% 
   filter( unique_id == "BL 6-2") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
@@ -216,7 +220,7 @@ mean_plot_62 <- sig_errors %>%
 error_plot_62 <- sig_errors %>%
   filter( unique_id == "BL 6-2") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -227,7 +231,7 @@ error_plot_62 <- sig_errors %>%
 mean_plot_63 <- sig_errors %>% 
   filter( unique_id == "BL 6-3") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
@@ -237,7 +241,7 @@ mean_plot_63 <- sig_errors %>%
 error_plot_63 <- sig_errors %>%
   filter( unique_id == "BL 6-3") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -248,7 +252,7 @@ error_plot_63 <- sig_errors %>%
 mean_plot_64 <- sig_errors %>% 
   filter( unique_id == "BL 6-4") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
@@ -258,7 +262,7 @@ mean_plot_64 <- sig_errors %>%
 error_plot_64 <- sig_errors %>%
   filter( unique_id == "BL 6-4") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -268,7 +272,7 @@ error_plot_64 <- sig_errors %>%
 mean_plot_65 <- sig_errors %>% 
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
@@ -278,7 +282,7 @@ mean_plot_65 <- sig_errors %>%
 error_plot_65 <- sig_errors %>%
   filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
@@ -288,7 +292,7 @@ error_plot_65 <- sig_errors %>%
 mean_plot_66 <- sig_errors %>% 
   filter( unique_id == "BL 6-6") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Operator)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = mean_sig), color = "black") + 
   theme_bw() + 
   #facet_wrap(Bullet~unique_id, nrow = 2) + 
@@ -298,7 +302,7 @@ mean_plot_66 <- sig_errors %>%
 error_plot_66 <- sig_errors %>%
   filter( unique_id == "BL 6-6") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(Operator)), alpha = 0.7) +
+  geom_line(aes(x = x_aligned, y = sig_error, group = scan_id, color = factor(operator_code)), alpha = 0.7) +
   geom_hline(yintercept = 0, color = "black") + 
   #facet_wrap(~unique_id, nrow = 2) + 
   theme_bw() + 
