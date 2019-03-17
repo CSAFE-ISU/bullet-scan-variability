@@ -25,6 +25,12 @@ recaptures <- readRDS("../data/user_recapture_sigs.rda")
 user_gt <- read_csv("../data/user_gt.csv")
 recaptures <- left_join(recaptures, user_gt)
 
+oper_blind <- read_csv("../data/user_operators_blind.csv")
+recaptures <- left_join(recaptures, oper_blind)
+
+bullet_gt <- read_csv("../data/user_bullets_gt.csv")
+recaptures <- left_join(recaptures, bullet_gt)
+
 head(recaptures)
 
 recaptures <- recaptures %>% 
@@ -46,13 +52,23 @@ recap_long <- recaptures %>% unnest(sigs)
 First, let's just get an initial sense for recaptures with all operators, all lands.  
 ```{r}
 recap_long %>% 
-  filter(Bullet == "Bullet 1") %>% 
+  filter(bullet_code == "Bullet A") %>% 
   ggplot() + 
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.3) + 
   theme_bw() + 
-  facet_grid(Operator~unique_id) + 
-  labs(title = "Hamby set Barrel 5") + 
-  scale_color_discrete(name = "Repetition #")
+  facet_grid(operator_code~unique_id) + 
+  labs(title = "Hamby set Barrel 5 Immediate Recaptures (Bullet A)", x= "X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Recapture #")
+
+
+recap_long %>% 
+  filter(bullet_code == "Bullet B") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.3) + 
+  theme_bw() + 
+  facet_grid(operator_code~unique_id) + 
+  labs(title = "Hamby set Barrel 5 Immediate Recaptures (Bullet B)", x= "X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Recapture #")
 ```
 
 
@@ -75,12 +91,11 @@ recap_mses <- recap_long %>%
 recap_long <- left_join(recap_long, recap_mses, by = "scan_id")
 recap_long <- recap_long %>% 
   group_by(scan_id) %>% 
-  mutate(Oper_MSE = paste0(Operator, " (MSE = ", format(round(recap_mse, 4),scientific = F), ")")) %>%
+  mutate(Oper_MSE = paste0(operator_code, " (MSE = ", format(round(recap_mse, 4),scientific = F), ")")) %>%
   ungroup()
 ```
 
 ```{r}
-
 recap_long %>% 
   filter(Bullet == "Bullet 1" & unique_id == "BL 5-1") %>% 
   ggplot() + 
@@ -149,13 +164,22 @@ user_gt <- read_csv("../data/user_gt.csv")
 recap_force_cc <- left_join(recap_force_cc, user_gt)
 
 
+oper_blind <- read_csv("../data/user_operators_blind.csv")
+recap_force_cc <- left_join(recap_force_cc, oper_blind)
+
+bullet_gt <- read_csv("../data/user_bullets_gt.csv")
+recap_force_cc <- left_join(recap_force_cc, bullet_gt)
+
+
+
+
 recap_force_cc <- recap_force_cc %>% 
   mutate(rep_id = paste0(scan_id, "-", Scan)) %>%
   select(-grooves) %>%
   mutate(sigs = purrr::map(sigs, .f = function(sigs){
     data.frame(sigs)
   }))
-
+head(recap_force_cc)
 
 recap_force_long <- recap_force_cc %>% unnest(sigs)
 
@@ -165,12 +189,21 @@ recap_force_long <- recap_force_cc %>% unnest(sigs)
 Just as before, let's just get an initial sense for recaptures with all operators, all lands.  
 ```{r}
 recap_force_long %>% 
-  filter(Bullet == "Bullet 1") %>% 
+  filter(bullet_code == "Bullet A") %>% 
   ggplot() + 
   geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.3) + 
   theme_bw() + 
-  facet_grid(Operator~unique_id) + 
-  labs(title = "Hamby set Barrel 5") + 
+  facet_grid(operator_code~unique_id) + 
+  labs(x = "X Location", y = "Signature Height", title = "Hamby set Barrel 5 Immediate Recaptures (Bullet A)") + 
+  scale_color_discrete(name = "Repetition #")
+
+recap_force_long %>% 
+  filter(bullet_code == "Bullet B") %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = sig, group = rep_id, color = factor(Scan)), alpha = 0.3) + 
+  theme_bw() + 
+  facet_grid(operator_code~unique_id) + 
+  labs(x = "X Location", y = "Signature Height", title = "Hamby set Barrel 5 Immediate Recaptures (Bullet B)") + 
   scale_color_discrete(name = "Repetition #")
 ```
 
