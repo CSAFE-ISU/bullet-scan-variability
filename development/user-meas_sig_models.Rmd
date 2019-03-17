@@ -34,6 +34,12 @@ sig_operator_grid <- signature_data %>%
 
 head(sig_operator_grid)
 
+sig_operator <- sig_operator_grid
+subset_by_5 <- seq(1, max(sig_operator$x_aligned), by = 5)
+sig_operator <- sig_operator %>% filter(x_aligned %in% subset_by_5)
+#sig_op_model_full <- lmer(sig2~fixed_BLm +  (1|bullet_code/unique_id) + (1|Operator/unique_id) + (1|Operator:bullet_code), data = sig_operator) ##Does not run!!! 
+#summary(sig_op_model_full) 
+
 subset_xs <- seq(1, max(sig_operator_grid$x_aligned), by = 100)
 
 sig_operator_grid <- sig_operator_grid %>% filter(x_aligned %in% subset_xs)
