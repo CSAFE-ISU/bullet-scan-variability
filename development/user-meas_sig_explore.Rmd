@@ -105,7 +105,6 @@ barrel6land6 <- barrel6land6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = fun
 barrel6 <- rbind(barrel6land1, barrel6land2, barrel6land3, barrel6land4, barrel6land5, barrel6land6)
 saveRDS(barrel6, "../data/user_aligned_sigs.rda")
 
-
 b6_long <- barrel6 %>% unnest(sigs_aligned)
 head(b6_long)
 
@@ -140,7 +139,7 @@ b6_long %>% ggplot() +
 
 ```{r}
 b6_long %>% 
-  filter( unique_id == "BL 6-5") %>% 
+  filter( unique_id == "BL 6-3") %>% 
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
