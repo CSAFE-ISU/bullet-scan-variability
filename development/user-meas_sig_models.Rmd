@@ -27,7 +27,6 @@ Next, we want to get a grid of data from the pilot study that we can use to get 
 sig_operator_grid <- signature_data %>% 
   filter(Round != "Round 4") %>%
   filter(Operator != "Marco" & Operator != "Jozef") %>%
-  filter(Machine == "Sneox1") %>%
   mutate(fixed_BLm = as.factor(fixed_BLm), 
          Operator = as.factor(Operator), 
          unique_id = as.factor(unique_id))
@@ -40,13 +39,44 @@ sig_operator <- sig_operator %>% filter(x_aligned %in% subset_by_5)
 #sig_op_model_full <- lmer(sig2~fixed_BLm +  (1|bullet_code/unique_id) + (1|Operator/unique_id) + (1|Operator:bullet_code), data = sig_operator) ##Does not run!!! 
 #summary(sig_op_model_full) 
 
-subset_xs <- seq(1, max(sig_operator_grid$x_aligned), by = 100)
+subset_xs <- seq(1, max(sig_operator_grid$x_aligned), by = 50)
 
 sig_operator_grid <- sig_operator_grid %>% filter(x_aligned %in% subset_xs)
 
-sig_op_model <- lmer(sig2~fixed_BLm + (1|bullet_code/unique_id) + (1|Operator/unique_id) + (1|Operator:bullet_code), data = sig_operator_grid)
+sig_op_model <- lmer(sig2~fixed_BLm + (1|bullet_code/unique_id) + (1|Operator), data = sig_operator_grid)
 summary(sig_op_model)
-vcov(sig_op_model)
+
+sig_op_model <- lmer(sig2 ~fixed_BLm+ (1|bullet_code/unique_id) + (1|Operator), data = sig_operator_grid)
+sig_operat
+
 ```
 
+```{r}
+sig_operator_mean <- sig_operator_grid %>%
+  group_by(unique_id, x_aligned, bullet_code) %>%
+  mutate(mean_sig = mean(sig2, na.rm = T)) %>%
+  mutate(sig_resid = sig2 - mean_sig) %>%
+  ungroup()
 
+sig_operator_mean <- sig_operator_mean %>%
+  mutate(sig_resid = sig2 - mean_sig) 
+
+sig_operator_mean %>% 
+  ggplot(aes(x =x_aligned, y = sig_resid )) + facet_wrap(~unique_id) + geom_point(aes(colour=Operator))
+model0 <- lmer(sig_resid ~-1 +(1|bullet_code/x), data = sig_operator_mean)
+
+model <- lmer(sig_resid ~-1 +(1|bullet_code/unique_id) + (1|Operator), data = sig_operator_mean)
+summary(model)
+
+
+model2 <- lmer(sig_resid ~-1 +(1|bullet_code/unique_id) + (1|Operator) + (1|Operator:bullet_code), data = sig_operator_mean)
+summary(model2)
+
+
+model3 <- lmer(sig_resid ~-1 + (1|unique_id) + (1|bullet_code) + (1|Operator) + (1|Operator:bullet_code), data = sig_operator_mean)
+summary(model3)
+
+model4 <- lmer(sig_resid ~-1 + (1|unique_id) + (1|(Operator + bullet_code):unique_id), data = sig_operator_mean)
+summary(model4)
+
+```
