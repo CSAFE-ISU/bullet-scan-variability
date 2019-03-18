@@ -53,6 +53,7 @@ b6l1_long %>% ggplot() +
   theme_bw() 
 
 barrel6land2 <- user_sigs %>% filter(unique_id == "BL 6-2")
+#head(barrel6land2)
 barrel6land2 <- barrel6land2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
   align <- sig_align(barrel6land2$sigs[[1]]$sig, row$sig)
   lands <- align$lands
@@ -139,14 +140,13 @@ b6_long %>% ggplot() +
 
 ```{r}
 b6_long %>% 
-  filter( unique_id == "BL 6-3") %>% 
+  filter( unique_id == "BL 6-5") %>% 
   ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(Round)), alpha = 0.7) + 
   geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
   theme_bw() + 
-  #facet_wrap(Bullet~unique_id, nrow = 2) + 
-  labs(title = "Hamby set Barrel 6") + 
-  scale_color_discrete(name = "Operator")
+  facet_grid(Operator~bullet_code) + 
+  labs(title = "Hamby set Barrel 6") 
 ```
 
 

@@ -16,12 +16,37 @@ NEED TO READ IN THE GROUND TRUTH BULLET CODES.
 
 ```{r}
 pairwise_data <- readRDS("../data/user_meas_pairwise.rda")
+bullet_gt <- read_csv("../data/user_bullets_gt.csv")
+
+
+bullet_s1 <- bullet_gt %>% 
+  mutate(Operator_S1 = Operator, 
+         Barrel_S1 = Barrel, 
+         Bullet_S1 = Bullet, 
+         Round_S1 = Round, 
+         bullet_id_S1 = bullet_id, 
+         bullet_code_S1 = bullet_code) %>%
+  select(Operator_S1, Barrel_S1, Bullet_S1, Round_S1, bullet_id_S1, bullet_code_S1) 
+
+bullet_s2 <- bullet_gt %>% 
+  mutate(Operator_S2 = Operator, 
+         Barrel_S2 = Barrel, 
+         Bullet_S2 = Bullet, 
+         Round_S2 = Round, 
+         bullet_id_S2 = bullet_id, 
+         bullet_code_S2 = bullet_code) %>%
+  select(Operator_S2, Barrel_S2, Bullet_S2, Round_S2, bullet_id_S2, bullet_code_S2) 
+
+pairwise_data <- left_join(pairwise_data, bullet_s1)
+pairwise_data <- left_join(pairwise_data, bullet_s2)
+
+
 
 
 pairwise_data <- pairwise_data %>% 
   mutate(operator_truth = ifelse(Operator_S1 == Operator_S2, 
                                  "Same Operator", "Diff Operator"), 
-         bullet_truth = ifelse(Bullet_S1 == Bullet_S2,
+         bullet_truth = ifelse(bullet_code_S1 == bullet_code_S2,
                                "Same Bullet", "Diff Bullet"),
          machine_truth = ifelse(Machine_S1 == Machine_S2,
                                 "Same Machine", "Diff Machine"),
@@ -43,36 +68,77 @@ pairwise_data %>%
 ```
 
 
-```{r}
-pairwise_data %>% 
-  ggplot() + geom_density(aes(x = rfscore, fill = factor(operator_truth)), alpha = 0.5) + 
-  theme_bw() + 
-  scale_fill_manual(name = "", breaks = c("Diff Operator", "Same Operator"), 
-                     labels = c("Diff Operator", "Same Operator"), 
-                     limits=c("Diff Operator","Same Operator"), 
-                     values = c("grey80", "darkorange")) + 
-  facet_wrap(~machine_truth, nrow = 2) + 
-  labs(x = "Random Forest Score", y = "", title = "User measurements set Land-to-Land Results")
-```
+
 
 
 ```{r}
+pairwise_data <- pairwise_data %>% 
+  mutate(is_gea_scan = 
+           ifelse((land1 == "Barrel 6-Land 1-Bullet 2-Allison-Sneox1-Round 3"| 
+                     land2 == "Barrel 6-Land 1-Bullet 2-Allison-Sneox1-Round 3"), 
+                  "gea", "lea")) %>%
+  mutate(is_gea_scan = 
+           ifelse((land1 == "Barrel 6-Land 2-Bullet 2-Allison-Sneox1-Round 3"| 
+                     land2 == "Barrel 6-Land 2-Bullet 2-Allison-Sneox1-Round 3"), 
+                  "gea", is_gea_scan))
+
 pairwise_data_b6 <- pairwise_data %>%
   filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>%
-  filter(ground_truth == "Same Source") 
+  filter(ground_truth == "Same Source")
+
+pairwise_data_lea <- pairwise_data_b6 %>% filter(is_gea_scan == "lea")
 
 
-pair_op_model <- lmer(rfscore ~ unique_id_S1 + (1|bullet_truth/unique_id_S1) + 
-                        (1|operator_truth/unique_id_S1) + (1|machine_truth/unique_id_S1) + 
-                        (1|operator_truth:bullet_truth) + (1|machine_truth:bullet_truth),
-                  data = pairwise_data_b6)
 
-pair_op_base <- lmer(rfscore~unique_id_S1 + (1|bullet_truth/unique_id_S1), 
-                      data = pairwise_data_b6)
+pairwise_data %>%
+  ggplot() + geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(ground_truth)), alpha = 0.6) + theme_bw() + 
+  facet_wrap(~is_gea_scan, nrow = 2) + 
+  scale_fill_manual(name = "", breaks = c("Different Source", "Same Source"), 
+                     labels = c("Different Source", "Same Source"), 
+                     limits=c("Different Source","Same Source"), 
+                     values = c("grey80", "darkorange")) 
 
-summary(pair_op_model)
+
+pairwise_data_b6 %>% 
+  ggplot() + geom_density(aes(x = rfscore, fill = factor(is_gea_scan)), alpha = 0.6) + theme_bw()
+
 ```
 
+
+```{r}
+pairwise_model <- lmer(rfscore ~  (1|bullet_truth/unique_id_S1) + 
+                        (1|operator_truth) + (1|machine_truth) + 
+                        (1|operator_truth:bullet_truth) + (1|machine_truth:bullet_truth),
+                  data = pairwise_data_b6)
+pairwise_model0 <- lmer(rfscore ~  (1|bullet_truth/unique_id_S1),
+                  data = pairwise_data_b6)
+
+pairwise_model_no_gea <- lmer(rfscore ~ (1|bullet_truth/unique_id_S1) + 
+                                (1|operator_truth) + (1|machine_truth) + 
+                                (1|operator_truth:bullet_truth) + (1|machine_truth:bullet_truth),
+                              data = pairwise_data_lea)
+
+pairwise_model0_no_gea <- lmer(rfscore ~ (1|bullet_truth/unique_id_S1),
+                              data = pairwise_data_lea)
+
+```
+
+
+```{r}
+pairwise_data_nonmatch <- pairwise_data %>% 
+  filter(ground_truth == "Different Source") %>%
+  filter(Barrel_S1 == "Barrel 6" & Barrel_S2 == "Barrel 6") %>%
+  filter(is_gea_scan == "lea")
+
+
+pairwise_model_nm <- lmer(rfscore ~  (1|bullet_truth/unique_id_S1),
+                  data = pairwise_data_nonmatch)
+
+pairwise_data_nonmatch %>%
+  ggplot() + geom_density(aes(x = rfscore, fill = factor(bullet_truth)), alpha = 0.6) + 
+  theme_bw() 
+
+```
 
 
 
