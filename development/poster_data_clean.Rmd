@@ -1,0 +1,157 @@
+---
+title: "poster data"
+author: "Kiegan Rice"
+date: "5/9/2019"
+output: html_document
+---
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+library(zoo)
+```
+
+Read in the data, and extract Operator, Barrel, Bullet, and Land.  
+
+```{r}
+filenames <- list.files("//Volumes/CSAFEvBig12/CSAFEv1 Echo/Variability/", pattern = "*.x3p", full.names = T, recursive = T) ## should be 1100 + as of 4/24/19
+
+filenames_green <- filenames[which(str_detect(filenames, "Barrel Green") == T)] 
+filenames_orange <- filenames[which(str_detect(filenames, "Barrel Orange") == T)]
+filenames_pink <- filenames[which(str_detect(filenames, "Barrel Pink") == T)]
+
+
+variability_scans_orange <- data.frame(source = filenames_orange)
+
+variability_scans_orange <- variability_scans_orange %>%
+  mutate(operator = purrr::map_chr(source, .f = function(filename){
+    strsplit(strsplit(filename, "//")[[1]][3], "/")[[1]][1]
+  }),
+  round = purrr::map_chr(source, .f = function(filename){
+     strsplit(strsplit(filename, "//")[[1]][3], "/")[[1]][2]
+  }), 
+  machine = purrr::map_chr(source, .f = function(filename){
+    strsplit(strsplit(filename, "//")[[1]][3], "/")[[1]][3]
+  }), 
+  barrel = purrr::map_chr(source, .f = function(filename){
+    strsplit(strsplit(filename, "//")[[1]][3], "/")[[1]][4]
+  }), 
+  bullet = purrr::map_chr(source, .f = function(filename){
+    strsplit(strsplit(filename, "//")[[1]][3], "/")[[1]][5]
+  }), 
+  land = purrr::map_chr(source, .f = function(filename){
+    cut_file <- strsplit(filename, "//")[[1]][3]
+    str_sub(cut_file, start = str_locate(cut_file, "Land ")[1], end = str_locate(cut_file, "Land ")[2]+1)
+  }))
+
+head(variability_scans_orange)
+
+orange_rounds123 <- variability_scans_orange %>% filter(round != "Round 4", round != "Round 5")
+
+orange_rounds123 <- orange_rounds123 %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+  x3ptools::read_x3p(filename)
+}))
+
+#saveRDS(orange_rounds123, "../data/variability_scans/orange_rounds123.rda")
+
+```
+
+
+
+```{r}
+orange_rounds123 <- orange_rounds123 %>% mutate(
+  x3p = x3p %>% purrr::map(.f = x3p_m_to_mum)
+)
+
+orange_rounds123 <- orange_rounds123 %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
+  x3ptools::x3p_to_df(x3p)
+}))
+
+orange_ccdata <- orange_rounds123 %>% select(source, round, operator, machine, barrel, bullet, land, ccdata)
+#saveRDS(orange_ccdata, "../data/variability_scans/orange_ccdata.rda")
+```
+
+
+```{r}
+orange_crosscuts <- orange_rounds123 %>% mutate(
+  crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
+)
+
+allison_crosscuts <- orange_rounds123 %>%
+  filter(operator == "Allison") %>%
+  mutate(
+    crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
+  )
+
+anyesha_crosscuts <- orange_rounds123 %>%
+  filter(operator == "Anyesha") %>%
+  mutate(
+    crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
+  )
+
+carley_crosscuts <- orange_rounds123 %>%
+  filter(operator == "Carley") %>%
+  mutate(
+    crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
+  )
+
+connor_crosscuts <- orange_rounds123 %>%
+  filter(operator == "Connor") %>%
+  mutate(
+    crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
+  )
+
+#mya_crosscuts <- orange_rounds123 %>% # right now, exclude mya 
+#  filter(operator == "Mya") %>%
+#  mutate(
+#    crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
+#  )
+
+```
+
+```{r}
+orange_crosscuts <- rbind(allison_crosscuts, anyesha_crosscuts)
+orange_crosscuts <- rbind(orange_crosscuts, carley_crosscuts)
+orange_crosscuts <- rbind(orange_crosscuts, connor_crosscuts)
+
+#table(orange_crosscuts$operator, factor(orange_crosscuts$crosscut))
+## interesting insight - connor has a different crosscut distribution (higher crosscut #s usually) than the others. the others are very skewed right starting at 50
+```
+
+```{r}
+orange_crosscuts <- orange_crosscuts %>% mutate(crosscut = ifelse(is.na(crosscut), median(crosscut, na.rm = T), crosscut))
+
+
+ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
+  #x3pdat <- bulletxtrctr::check_x3p(x3p)
+  x3p_df <- na.trim(ccdata)
+  ys <- unique(x3p_df$y)
+  if (is.null(y))
+    y <- median(ys)
+  ind <- which.min(abs(y - ys))
+  y_min <- ys[ind - 5]
+  y_max <- ys[ind + 4]
+  lower <- min(y_min, y_max)
+  upper <- max(y_min, y_max)
+  x3p_df_fix <- x3p_df[x3p_df$y >= lower & x3p_df$y <= upper,]
+  return(na.omit(x3p_df_fix))
+}
+# now extract the crosscuts
+orange_crosscuts <- orange_crosscuts %>% mutate(
+  ccdata = purrr::map2(.x = ccdata, .y = crosscut, 
+                       .f = ccdata_ten_crosscut)
+)
+
+orange_crosscuts <- orange_crosscuts %>% mutate(
+  ccdata = purrr::map(ccdata, .f = function(ccdata){
+    ccdata %>% group_by(x) %>% summarise(y = mean(y, na.rm = T), value = mean(value, na.rm = T))
+  })
+)
+
+orange_crosscuts <- orange_crosscuts %>% select(-x3p)
+```
+
+

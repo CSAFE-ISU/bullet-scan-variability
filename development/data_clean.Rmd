@@ -1,0 +1,112 @@
+---
+title: "scanning variability study"
+output: html_document
+---
+
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+```
+
+Read in the data, and extract Operator, Barrel, Bullet, and Land.  
+
+```{r}
+filenames <- list.files("//Volumes/CSAFEvBig12/CSAFEv1 Echo/Variability/", pattern = "*.x3p", full.names = T, recursive = T) ## should be 1100 + as of 4/24/19
+
+filenames_green <- filenames[which(str_detect(filenames, "Barrel Green") == T)] 
+filenames_orange <- filenames[which(str_detect(filenames, "Barrel Orange") == T)]
+filenames_pink <- filenames[which(str_detect(filenames, "Barrel Pink") == T)]
+
+
+
+variability_scans_green <- data.frame(source = filenames_green)
+variability_scans_green <- variability_scans_green %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+  x3ptools::read_x3p(filename)
+}))
+head(variability_scans_green)
+
+variability_scans_orange <- data.frame(source = filenames_orange)
+variability_scans_orange <- variability_scans_orange %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+  x3ptools::read_x3p(filename)
+}))
+
+variability_scans_pink <- data.frame(source = filenames_pink)
+variability_scans_pink <- variability_scans_pink %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+  x3ptools::read_x3p(filename)
+}))
+
+
+
+plot_x3p <- function(datafile, scan_num){
+  filename <- datafile$source[[scan_num]]
+  filename_clean <- str_sub(filename, start = str_locate(filename, "Variability - ")[1])
+  filename_new <- str_replace_all(str_replace(paste0("../data/variability_scans/scan_images/", filename_clean), ".x3p", ".png"), " ", "")
+  x3p_file <- datafile$x3p[[scan_num]]
+  image_x3p(x3p_file, file = filename_new, size = c(3500, 1500), zoom = 0.5)
+}
+#plot_x3p(variability_scans_orange, 6)
+
+#for(i in 1:390){
+#  plot_x3p(variability_scans_orange, i)
+#}
+
+#for(i in 1:360){
+#  plot_x3p(variability_scans_green, i)
+#}
+#rm(variability_scans_green)
+
+
+for(i in 1:360){
+  plot_x3p(variability_scans_pink, i)
+}
+rm(variability_scans_pink)
+```
+
+```{r}
+
+
+user_meas <- user_meas %>% mutate(source = purrr::map_chr(as.character(source), .f = function(source){
+  strsplit(source, "//")[[1]][2]
+}))
+
+
+user_meas <- user_meas %>% mutate(Round = purrr::map_chr(as.character(source), .f = function(source){
+  strsplit(source, "/")[[1]][1]
+}), 
+Operator = purrr::map_chr(as.character(source), .f = function(source){
+  op <- strsplit(source, "/")[[1]][2]
+  strsplit(op, " ")[[1]][1]
+}), 
+source = factor(str_replace_all(source, ";", " -")),
+Barrel = purrr::map_chr(as.character(source), .f = function(source){
+  strsplit(source, " - ")[[1]][2]
+}), 
+Bullet = purrr::map_chr(as.character(source), .f = function(source){
+  strsplit(source, " - ")[[1]][3]
+}), 
+Land = purrr::map_chr(as.character(source), .f = function(source){
+  strsplit(source, " - ")[[1]][4]
+}), 
+Machine = purrr::map_chr(as.character(source), .f = function(source){
+  mac <- ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][6], strsplit(source, " - ")[[1]][5]) 
+  str_replace_all(mac, " ", "")
+}), 
+Scan = purrr::map_chr(as.character(source), .f = function(source){
+  ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][5], "Scan 1")
+}))
+
+#head(user_meas)
+```
+
+
+Save just the information about the study set up.  
+```{r, echo = F, warning = F, message = F}
+user_setup <- user_meas %>% select(source, Round, Operator, Barrel, Bullet, Land, Machine, Scan)
+#saveRDS(user_setup, "../data/user_meas_setup.rda")
+
+```
+

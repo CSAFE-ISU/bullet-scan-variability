@@ -30,6 +30,7 @@ user_sigs <- left_join(user_sigs, user_bullet_gt)
 
 user_ops <- read_csv("../data/user_operators_blind.csv")
 user_sigs <- left_join(user_sigs, user_ops)
+head(user_sigs)
 ```
 
 
