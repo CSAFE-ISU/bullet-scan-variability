@@ -1,0 +1,361 @@
+---
+title: "variability data grooves, signature extraction"
+output: html_document
+---
+
+
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+library(randomForest)
+```
+
+
+## BARREL ORANGE  
+Crosscut data already extracted  
+
+```{r}
+orange_crosscuts <- readRDS("../data/variability_scans/orange_123_cc.rda")
+
+orange_crosscuts <- orange_crosscuts %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+
+orange_crosscuts <- orange_crosscuts %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+               adjust = 10, return_plot = TRUE)
+)
+```
+
+```{r}
+ccdata <- orange_crosscuts$ccdata
+grooves <- orange_crosscuts$grooves
+
+
+
+library(shiny)
+
+#if (interactive()) {
+shinyApp(
+  
+  ui = fluidPage(
+    selectInput("k","Investigate kth plot:", selected = 1,
+                choices=1:length(grooves)),
+    textOutput("groovelocations"),
+    actionButton("confirm", "Confirm"),
+    actionButton("save", "Save"),
+    plotOutput("groovePlot", click = "plot_click"),
+    verbatimTextOutput("info")
+  ),
+  
+  server = function(input, output, session) {
+    output$groovePlot <- renderPlot({
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot 
+
+      p
+    })
+    output$groovelocations <- renderText({
+      paste("Left Groove: ",grooves[[as.numeric(input$k)]]$groove[1], 
+            " Right Groove: ",grooves[[as.numeric(input$k)]]$groove[2])
+    })
+    observeEvent(input$confirm,{
+      cat(str(input$k))
+      updateSelectInput(session, "k","Investigate kth plot:", 
+                        selected = as.numeric(input$k)+1,
+                        choices=1:length(grooves))
+    })
+    observeEvent(input$save,{
+      saveRDS(grooves, file="../data/variability_scans/orange_123_grooves.rda")
+      cat("groove data saved\n")
+    })
+    
+    observeEvent(input$plot_click,{
+      k <- as.numeric(input$k)
+      xloc <- input$plot_click$x
+      
+      gr <- grooves[[k]]$groove
+      if (abs(gr[1]-xloc) < abs(gr[2]-xloc)) {
+        grooves[[k]]$groove[1] <<- xloc
+      } else {
+        grooves[[k]]$groove[2] <<- xloc
+      }
+      output$groovePlot <- renderPlot({ 
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot + 
+        geom_vline(xintercept = grooves[[k]]$groove[1], colour="green") +
+        geom_vline(xintercept = grooves[[k]]$groove[2], colour="green")
+    
+      p
+      })
+  
+    })
+    output$info <- renderText({
+    paste0("x=", input$plot_click$x, "\ny=", input$plot_click$y)
+  })
+
+  },
+  
+  options = list(height = 500)
+)
+#}
+#saveRDS(grooves, file="../data/variability_scans/orange_123_grooves.rda")
+
+```
+
+```{r}
+grooves <- readRDS("../data/variability_scans/orange_123_grooves.rda")
+orange_crosscuts$grooves <- grooves
+
+
+orange_crosscuts <- orange_crosscuts %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+
+orange_sigs <- orange_crosscuts %>% select(-ccdata)
+saveRDS(orange_sigs, "../data/variability_scans/orange_123_sigs.rda")
+```
+
+
+
+
+## BARREL GREEN  
+
+Crosscut data already extracted  
+
+```{r}
+green_crosscuts <- readRDS("../data/variability_scans/green_123_cc_full.rda")
+
+green_crosscuts <- green_crosscuts %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+
+
+green_crosscuts <- green_crosscuts %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassofull", 
+               adjust = 10, return_plot = TRUE)
+)
+```
+
+```{r}
+ccdata <- green_crosscuts$ccdata
+grooves <- green_crosscuts$grooves
+
+
+
+library(shiny)
+
+#if (interactive()) {
+shinyApp(
+  
+  ui = fluidPage(
+    selectInput("k","Investigate kth plot:", selected = 1,
+                choices=1:length(grooves)),
+    textOutput("groovelocations"),
+    actionButton("confirm", "Confirm"),
+    actionButton("save", "Save"),
+    plotOutput("groovePlot", click = "plot_click"),
+    verbatimTextOutput("info")
+  ),
+  
+  server = function(input, output, session) {
+    output$groovePlot <- renderPlot({
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot 
+
+      p
+    })
+    output$groovelocations <- renderText({
+      paste("Left Groove: ",grooves[[as.numeric(input$k)]]$groove[1], 
+            " Right Groove: ",grooves[[as.numeric(input$k)]]$groove[2])
+    })
+    observeEvent(input$confirm,{
+      cat(str(input$k))
+      updateSelectInput(session, "k","Investigate kth plot:", 
+                        selected = as.numeric(input$k)+1,
+                        choices=1:length(grooves))
+    })
+    observeEvent(input$save,{
+      saveRDS(grooves, file="../data/variability_scans/green_123_grooves.rda")
+      cat("groove data saved\n")
+    })
+    
+    observeEvent(input$plot_click,{
+      k <- as.numeric(input$k)
+      xloc <- input$plot_click$x
+      
+      gr <- grooves[[k]]$groove
+      if (abs(gr[1]-xloc) < abs(gr[2]-xloc)) {
+        grooves[[k]]$groove[1] <<- xloc
+      } else {
+        grooves[[k]]$groove[2] <<- xloc
+      }
+      output$groovePlot <- renderPlot({ 
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot + 
+        geom_vline(xintercept = grooves[[k]]$groove[1], colour="green") +
+        geom_vline(xintercept = grooves[[k]]$groove[2], colour="green")
+    
+      p
+      })
+  
+    })
+    output$info <- renderText({
+    paste0("x=", input$plot_click$x, "\ny=", input$plot_click$y)
+  })
+
+  },
+  
+  options = list(height = 500)
+)
+#}
+saveRDS(grooves, file="../data/variability_scans/green_123_grooves.rda")
+
+```
+
+
+
+```{r}
+green_grooves <- readRDS("../data/variability_scans/green_123_grooves.rda")
+green_crosscuts$grooves <- green_grooves
+
+
+green_crosscuts <- green_crosscuts %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+
+green_sigs <- green_crosscuts %>% select(-ccdata)
+saveRDS(green_sigs, "../data/variability_scans/green_123_sigs.rda")
+```
+
+
+
+## BARREL PINK  
+
+Crosscut data already extracted  
+
+```{r}
+pink_crosscuts <- readRDS("../data/variability_scans/pink_123_cc.rda")
+
+pink_crosscuts <- pink_crosscuts %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+
+pink_crosscuts <- pink_crosscuts %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+               adjust = 10, return_plot = TRUE)
+)
+```
+
+```{r}
+ccdata <- pink_crosscuts$ccdata
+grooves <- pink_crosscuts$grooves
+
+
+
+library(shiny)
+
+#if (interactive()) {
+shinyApp(
+  
+  ui = fluidPage(
+    selectInput("k","Investigate kth plot:", selected = 1,
+                choices=1:length(grooves)),
+    textOutput("groovelocations"),
+    actionButton("confirm", "Confirm"),
+    actionButton("save", "Save"),
+    plotOutput("groovePlot", click = "plot_click"),
+    verbatimTextOutput("info")
+  ),
+  
+  server = function(input, output, session) {
+    output$groovePlot <- renderPlot({
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot 
+
+      p
+    })
+    output$groovelocations <- renderText({
+      paste("Left Groove: ",grooves[[as.numeric(input$k)]]$groove[1], 
+            " Right Groove: ",grooves[[as.numeric(input$k)]]$groove[2])
+    })
+    observeEvent(input$confirm,{
+      cat(str(input$k))
+      updateSelectInput(session, "k","Investigate kth plot:", 
+                        selected = as.numeric(input$k)+1,
+                        choices=1:length(grooves))
+    })
+    observeEvent(input$save,{
+      saveRDS(grooves, file="../data/variability_scans/pink_123_grooves.rda")
+      cat("groove data saved\n")
+    })
+    
+    observeEvent(input$plot_click,{
+      k <- as.numeric(input$k)
+      xloc <- input$plot_click$x
+      
+      gr <- grooves[[k]]$groove
+      if (abs(gr[1]-xloc) < abs(gr[2]-xloc)) {
+        grooves[[k]]$groove[1] <<- xloc
+      } else {
+        grooves[[k]]$groove[2] <<- xloc
+      }
+      output$groovePlot <- renderPlot({ 
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot + 
+        geom_vline(xintercept = grooves[[k]]$groove[1], colour="green") +
+        geom_vline(xintercept = grooves[[k]]$groove[2], colour="green")
+    
+      p
+      })
+  
+    })
+    output$info <- renderText({
+    paste0("x=", input$plot_click$x, "\ny=", input$plot_click$y)
+  })
+
+  },
+  
+  options = list(height = 500)
+)
+#}
+saveRDS(grooves, file="../data/variability_scans/pink_123_grooves.rda")
+
+```
+
+```{r}
+pink_grooves <- readRDS("../data/variability_scans/pink_123_grooves.rda")
+pink_crosscuts$grooves <- pink_grooves
+
+
+pink_crosscuts <- pink_crosscuts %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+
+pink_sigs <- pink_crosscuts %>% select(-ccdata)
+saveRDS(pink_sigs, "../data/variability_scans/pink_123_sigs.rda")
+```
+
+

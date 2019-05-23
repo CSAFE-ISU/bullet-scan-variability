@@ -1,0 +1,252 @@
+---
+title: "variability data: pairwise comparisons for ground truth"
+output: html_document
+---
+
+
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+library(randomForest)
+```
+
+
+## BARREL ORANGE  
+Crosscut data already extracted  
+
+
+```{r}
+orange_sigs <- readRDS("../data/variability_scans/orange_123_sigs.rda")
+```
+
+## ORANGE, CONNORS BULLETS 123 for BASE
+```{r}
+orange_bullets_123 <- orange_sigs %>% filter(operator == "Connor", round == "Round 1", machine == "Sneox1") 
+orange_b123_lands <- unique(orange_bullets_123$scan_id) 
+orange_b123_comparisons <- data.frame(
+  expand.grid(land1 = orange_b123_lands, land2 = orange_b123_lands), stringsAsFactors = FALSE)
+orange_b123_comparisons <- orange_b123_comparisons %>% mutate(
+  aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
+    land1 <- orange_bullets_123$sigs[orange_bullets_123$scan_id == xx][[1]]
+    land2 <- orange_bullets_123$sigs[orange_bullets_123$scan_id == yy][[1]]
+    land1$bullet <- "first-land"
+    land2$bullet <- "second-land"
+    
+    sig_align(land1$sig, land2$sig)
+  })
+)
+
+```
+
+
+```{r}
+orange_b123_comparisons <- orange_b123_comparisons %>% mutate(
+  ccf0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_ccf(x$lands)),
+  lag0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_lag(x$lands)),
+  D0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_D(x$lands)),
+  length0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_length(x$lands)),
+  overlap0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_overlap(x$lands))
+)
+
+orange_b123_comparisons <- orange_b123_comparisons %>% mutate(
+  striae = aligned %>% purrr::map(.f = sig_cms_max, span = 75) 
+)
+orange_b123_comparisons <- orange_b123_comparisons %>% mutate(
+  cms_per_mm = purrr::map2(striae, aligned, .f = function(s, a) {
+    extract_feature_cms_per_mm(s$lines, a$lands, resolution=0.645)
+  }),
+  matches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = TRUE)
+  }),
+  mismatches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = FALSE)
+  })
+  
+)
+
+
+orange_b123_comparisons <- orange_b123_comparisons %>% mutate(
+  features = purrr::map2(.x = aligned, .y = striae, .f = extract_features_all, resolution = 0.645)
+)
+
+orange_b123_comparisons <- orange_b123_comparisons %>% mutate(
+  legacy_features = purrr::map(striae, extract_features_all_legacy, resolution = 0.645)
+)
+
+orange_b123_comparisons <- orange_b123_comparisons %>% tidyr::unnest(legacy_features) 
+# scale features before using them in the random forest, legacy features can be used out of the box
+orange_b123_comparisons$rfscore <- predict(bulletxtrctr::rtrees, newdata = orange_b123_comparisons, type = "prob")[,2]
+
+#head(comparisons_user)
+
+#saveRDS(comparisons_user, "../data/user_meas_comparisons.rda")
+
+rfscores_orange_b123 <- orange_b123_comparisons %>% select(land1, land2, rfscore)
+saveRDS(rfscores_orange_b123, "../data/variability_scans/orange_b123_rfscores.rda")
+
+```
+
+```{r}
+rfscores_orange_b123 <- rfscores_orange_b123 %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("Barrel_S1", "Land_S1", "Bullet_S1", 
+                    "Operator_S1", "Machine_S1", "Round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("Barrel_S2", "Land_S2", "Bullet_S2", 
+                    "Operator_S2", "Machine_S2", "Round_S2"), sep = "-")
+
+rfscores_orange_b123 %>%
+  filter(Bullet_S1 == "Bullet 1" & Machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = Land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~Bullet_S2 + Round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+## ORANGE BULLET 1
+
+```{r}
+orange_bullet1 <- orange_sigs %>% filter(bullet == "Bullet 1") 
+orange_b1_lands <- unique(orange_bullet1$scan_id) 
+orange_b1_comparisons <- data.frame(
+  expand.grid(land1 = orange_b1_lands, land2 = orange_b1_lands), stringsAsFactors = FALSE)
+orange_b1_comparisons <- orange_b1_comparisons %>% mutate(
+  aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
+    land1 <- orange_bullet1$sigs[orange_bullet1$scan_id == xx][[1]]
+    land2 <- orange_bullet1$sigs[orange_bullet1$scan_id == yy][[1]]
+    land1$bullet <- "first-land"
+    land2$bullet <- "second-land"
+    
+    sig_align(land1$sig, land2$sig)
+  })
+)
+
+orange_b1_comparisons <- orange_b1_comparisons %>% mutate(
+  ccf0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_ccf(x$lands)),
+  lag0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_lag(x$lands)),
+  D0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_D(x$lands)),
+  length0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_length(x$lands)),
+  overlap0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_overlap(x$lands))
+)
+
+orange_b1_comparisons <- orange_b1_comparisons %>% mutate(
+  striae = aligned %>% purrr::map(.f = sig_cms_max, span = 75) 
+)
+orange_b1_comparisons <- orange_b1_comparisons %>% mutate(
+  cms_per_mm = purrr::map2(striae, aligned, .f = function(s, a) {
+    extract_feature_cms_per_mm(s$lines, a$lands, resolution=0.645)
+  }),
+  matches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = TRUE)
+  }),
+  mismatches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = FALSE)
+  })
+)
+
+orange_b1_comparisons <- orange_b1_comparisons %>% mutate(
+  features = purrr::map2(.x = aligned, .y = striae, .f = extract_features_all, resolution = 0.645)
+)
+
+orange_b1_comparisons <- orange_b1_comparisons %>% mutate(
+  legacy_features = purrr::map(striae, extract_features_all_legacy, resolution = 0.645)
+)
+
+orange_b1_comparisons <- orange_b1_comparisons %>% tidyr::unnest(legacy_features) 
+# scale features before using them in the random forest, legacy features can be used out of the box
+orange_b1_comparisons$rfscore <- predict(bulletxtrctr::rtrees, newdata = orange_b1_comparisons, type = "prob")[,2]
+
+#head(comparisons_user)
+
+#saveRDS(comparisons_user, "../data/user_meas_comparisons.rda")
+
+rfscores_orange_b1 <- orange_b1_comparisons %>% select(land1, land2, rfscore)
+saveRDS(rfscores_orange_b1, "../data/variability_scans/orange_b1_rfscores.rda")
+```
+
+
+## ORANGE BULLET 2
+
+```{r}
+orange_bullet2 <- orange_sigs %>% filter(bullet == "Bullet 2") 
+orange_b2_lands <- unique(orange_bullet2$scan_id) 
+orange_b2_comparisons <- data.frame(
+  expand.grid(land1 = orange_b2_lands, land2 = orange_b2_lands), stringsAsFactors = FALSE)
+orange_b2_comparisons <- orange_b2_comparisons %>% mutate(
+  aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
+    land1 <- orange_bullet2$sigs[orange_bullet2$scan_id == xx][[1]]
+    land2 <- orange_bullet2$sigs[orange_bullet2$scan_id == yy][[1]]
+    land1$bullet <- "first-land"
+    land2$bullet <- "second-land"
+    
+    sig_align(land1$sig, land2$sig)
+  })
+)
+
+orange_b2_comparisons <- orange_b2_comparisons %>% mutate(
+  ccf0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_ccf(x$lands)),
+  lag0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_lag(x$lands)),
+  D0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_D(x$lands)),
+  length0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_length(x$lands)),
+  overlap0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_overlap(x$lands))
+)
+
+orange_b2_comparisons <- orange_b2_comparisons %>% mutate(
+  striae = aligned %>% purrr::map(.f = sig_cms_max, span = 75) 
+)
+orange_b2_comparisons <- orange_b2_comparisons %>% mutate(
+  cms_per_mm = purrr::map2(striae, aligned, .f = function(s, a) {
+    extract_feature_cms_per_mm(s$lines, a$lands, resolution=0.645)
+  }),
+  matches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = TRUE)
+  }),
+  mismatches0 = striae %>% purrr::map_dbl(.f = function(s) {
+    bulletxtrctr:::extract_helper_feature_n_striae(s$lines, type = "peak", match = FALSE)
+  })
+)
+
+orange_b2_comparisons <- orange_b2_comparisons %>% mutate(
+  features = purrr::map2(.x = aligned, .y = striae, .f = extract_features_all, resolution = 0.645)
+)
+
+orange_b2_comparisons <- orange_b2_comparisons %>% mutate(
+  legacy_features = purrr::map(striae, extract_features_all_legacy, resolution = 0.645)
+)
+
+orange_b2_comparisons <- orange_b2_comparisons %>% tidyr::unnest(legacy_features) 
+# scale features before using them in the random forest, legacy features can be used out of the box
+orange_b2_comparisons$rfscore <- predict(bulletxtrctr::rtrees, newdata = orange_b2_comparisons, type = "prob")[,2]
+
+#head(comparisons_user)
+
+#saveRDS(comparisons_user, "../data/user_meas_comparisons.rda")
+
+rfscores_orange_b2 <- orange_b2_comparisons %>% select(land1, land2, rfscore)
+saveRDS(rfscores_orange_b2, "../data/variability_scans/orange_b2_rfscores.rda")
+```
