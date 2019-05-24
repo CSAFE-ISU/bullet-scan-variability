@@ -96,6 +96,7 @@ saveRDS(rfscores_orange_b123, "../data/variability_scans/orange_b123_rfscores.rd
 ```
 
 ```{r}
+rfscores_orange_b123 <- readRDS("../data/variability_scans/orange_b123_rfscores.rda")
 rfscores_orange_b123 <- rfscores_orange_b123 %>% 
   mutate(id_S1 = land1, id_S2 = land2) %>% 
   separate(col = id_S1, 
@@ -316,6 +317,120 @@ orange_b3_comparisons$rfscore <- predict(bulletxtrctr::rtrees, newdata = orange_
 rfscores_orange_b3 <- orange_b3_comparisons %>% select(land1, land2, rfscore)
 saveRDS(rfscores_orange_b3, "../data/variability_scans/orange_b3_rfscores.rda")
 ```
+
+
+
+
+## SCORE VIZ FOR ESTABLISHING GROUND TRUTH  
+
+
+```{r}
+orange_sigs <- readRDS("../data/variability_scans/orange_123_sigs.rda")
+
+orange_lands <- data.frame(scan_id = unique(orange_sigs$scan_id))
+
+orange_lands <- orange_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+#write_csv(orange_lands, "../data/variability_scans/orange_gt.csv")
+```
+
+
+```{r}
+rfscores_orange_b1 <- readRDS("../data/variability_scans/orange_b1_rfscores.rda")
+rfscores_orange_b1 <- rfscores_orange_b1 %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+```
+
+The base land is "Connor - Bullet 1 - Sneox1 - Round 1 - LAND 1"
+
+
+## ALLISON
+
+```{r, echo = F, warning = F, message = F}
+rfscores_orange_b1 %>%
+  filter(operator_S1 == "Connor" & operator_S2 == "Allison") %>% 
+  filter(round_S1 == "Round 1", machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 1) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## ANYESHA
+
+```{r, echo = F, warning = F, message = F}
+rfscores_orange_b1 %>%
+  filter(operator_S1 == "Connor" & operator_S2 == "Anyesha") %>% 
+  filter(round_S1 == "Round 1", machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 1) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+## CARLEY
+
+```{r, echo = F, warning = F, message = F}
+rfscores_orange_b1 %>%
+  filter(operator_S1 == "Connor" & operator_S2 == "Carley") %>% 
+  filter(round_S1 == "Round 1", machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 1) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## CONNOR
+
+```{r, echo = F, warning = F, message = F}
+rfscores_orange_b1 %>%
+  filter(operator_S1 == "Connor" & operator_S2 == "Connor") %>% 
+  filter(round_S1 == "Round 1", machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 1) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## MYA
+
+```{r, echo = F, warning = F, message = F}
+rfscores_orange_b1 %>%
+  filter(operator_S1 == "Connor" & operator_S2 == "Mya") %>% 
+  filter(round_S1 == "Round 1", machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 1) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
 
 
 
