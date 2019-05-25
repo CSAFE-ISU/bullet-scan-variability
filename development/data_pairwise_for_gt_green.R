@@ -192,7 +192,7 @@ saveRDS(rfscores_green_b2, "data/variability_scans/green_b2_rfscores.rda")
 
 # NOW DO ALL OF BULLET 3  
 
-green_bullet3 <- green_sigs %>% filter(bullet == "Bullet 2\3") 
+green_bullet3 <- green_sigs %>% filter(bullet == "Bullet 3") 
 green_b3_lands <- unique(green_bullet3$scan_id) 
 green_b3_comparisons <- data.frame(
   expand.grid(land1 = green_b3_lands, land2 = green_b3_lands), stringsAsFactors = FALSE)
