@@ -192,7 +192,7 @@ saveRDS(rfscores_pink_b2, "data/variability_scans/pink_b2_rfscores.rda")
 
 # NOW DO ALL OF BULLET 3  
 
-pink_bullet3 <- pink_sigs %>% filter(bullet == "Bullet 2\3") 
+pink_bullet3 <- pink_sigs %>% filter(bullet == "Bullet 3") 
 pink_b3_lands <- unique(pink_bullet3$scan_id) 
 pink_b3_comparisons <- data.frame(
   expand.grid(land1 = pink_b3_lands, land2 = pink_b3_lands), stringsAsFactors = FALSE)
