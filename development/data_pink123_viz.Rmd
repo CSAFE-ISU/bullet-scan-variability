@@ -1,0 +1,192 @@
+---
+title: "pink rounds 123 signature viz"
+output: html_document
+---
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(gridExtra)
+library(lme4)
+library(bulletxtrctr)
+```
+
+
+First, we want to add our "unique_id" for each land to the signature data, so we can group them by that and align the lands. 
+```{r}
+pink_sigs <- readRDS("../data/variability_scans/pink_123_sigs.rda")
+pink_sigs <- pink_sigs %>% 
+  select(scan_id, sigs)
+head(pink_sigs)
+
+pink_gt <- read_csv("../data/variability_scans/pink_gt.csv")
+pink_sigs <- full_join(pink_sigs, pink_gt)
+
+pink_ops <- read_csv("../data/variability_scans/operators_blind.csv")
+pink_sigs <- left_join(pink_sigs, pink_ops)
+head(pink_sigs)
+```
+
+
+```{r}
+bl_p1 <- pink_sigs %>% filter(unique_id == "BL P-1")
+bl_p1 <- bl_p1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(bl_p1$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x_aligned <- 1:(dim(lands)[1])
+  lands
+}))
+
+blp1_long <- bl_p1 %>% unnest(sigs_aligned)
+
+blp1_long %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1)) + 
+  theme_bw() 
+
+bl_p2 <- pink_sigs %>% filter(unique_id == "BL P-2")
+bl_p2 <- bl_p2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(bl_p2$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x_aligned <- 1:(dim(lands)[1])
+  lands
+}))
+
+
+bl_p3 <- pink_sigs %>% filter(unique_id == "BL P-3")
+bl_p3 <- bl_p3 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(bl_p3$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x_aligned <- 1:(dim(lands)[1])
+  lands
+}))
+
+bl_p4 <- pink_sigs %>% filter(unique_id == "BL P-4")
+bl_p4 <- bl_p4 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(bl_p4$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x_aligned <- 1:(dim(lands)[1])
+  lands
+}))
+
+bl_p5 <- pink_sigs %>% filter(unique_id == "BL P-5")
+bl_p5 <- bl_p5 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(bl_p5$sigs[[1]]$sig, row$sig)
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x_aligned <- 1:(dim(lands)[1])
+  lands
+}))
+
+bl_p6 <- pink_sigs %>% filter(unique_id == "BL P-6")
+bl_p6 <- bl_p6 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
+  align <- sig_align(bl_p6$sigs[[1]]$sig, row$sig) 
+  lands <- align$lands
+  lands <- lands[!is.na(lands$sig1),]
+  lands$x_aligned <- 1:(dim(lands)[1])
+  lands
+}))
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+barrelp <- rbind(bl_p1, bl_p2, bl_p3, bl_p4, bl_p5, bl_p6)
+saveRDS(barrelp, "../data/variability_scans/pink_aligned_sigs.rda")
+
+bp_long <- barrelp %>% unnest(sigs_aligned)
+head(bp_long)
+
+
+bp_long %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_wrap(~unique_id, nrow = 2) + 
+  labs(title = "Barrel Pink")
+
+
+bp_long %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(machine~unique_id) + 
+  labs(title = "Barrel Pink")
+
+
+bp_long %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.8) + 
+  theme_bw() + 
+  facet_grid(operator_code~unique_id) + 
+  labs(title = "Barrel Pink")
+
+```
+
+
+```{r}
+bp_long %>%
+  filter(unique_id == "BL P-1") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 1")
+
+bp_long %>%
+  filter(unique_id == "BL P-2") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 2")
+
+bp_long %>%
+  filter(unique_id == "BL P-3") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 3")
+
+bp_long %>%
+  filter(unique_id == "BL P-4") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 4")
+
+bp_long %>%
+  filter(unique_id == "BL P-5") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 5")
+
+bp_long %>%
+  filter(unique_id == "BL P-6") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 6")
+
+
+```
+
+
