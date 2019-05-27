@@ -1,0 +1,143 @@
+---
+title: "Same Source Pairwise scores"
+author: "Kiegan Rice"
+output: html_document
+---
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(gridExtra)
+library(lme4)
+```
+
+
+```{r}
+orange_l1 <- readRDS("../data/variability_scans/orange_l1_rfscores.rda")
+orange_l2 <- readRDS("../data/variability_scans/orange_l2_rfscores.rda")
+orange_l3 <- readRDS("../data/variability_scans/orange_l3_rfscores.rda")
+orange_l4 <- readRDS("../data/variability_scans/orange_l4_rfscores.rda")
+orange_l5 <- readRDS("../data/variability_scans/orange_l5_rfscores.rda")
+orange_l6 <- readRDS("../data/variability_scans/orange_l6_rfscores.rda")
+
+orange_ids <- read_csv("../data/variability_scans/orange_gt.csv")
+orange_ids_l1 <- orange_ids %>% mutate(land1 = scan_id, unique_id_l1 = unique_id) %>% select(land1, unique_id_l1)
+orange_ids_l2 <- orange_ids %>% mutate(land2 = scan_id, unique_id_l2 = unique_id) %>% select(land2, unique_id_l2)
+orange_pairs <- rbind(orange_l1, orange_l2, orange_l3, orange_l4, orange_l5, orange_l6)
+orange_pairs <- full_join(orange_pairs, orange_ids_l1)
+orange_pairs <- full_join(orange_pairs, orange_ids_l2)
+```
+
+```{r}
+orange_pairs %>% ggplot() + geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + theme_bw()
+```
+
+```{r}
+orange_pairs <- orange_pairs %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+orange_pairs <- orange_pairs %>%
+  mutate(operator_gt = ifelse(operator_S1 == operator_S2, "Same Operator", "Different Operators"), 
+         round_gt = ifelse(round_S1 == round_S2, "Same Round", "Different Rounds"), 
+         bullet_gt = ifelse(bullet_S1 == bullet_S2, "Same Bullet", "Different Bullets"),
+         machine_gt = ifelse(machine_S1 == machine_S2, "Same Machine", "Different Machines"))
+```
+
+
+```{r}
+pairwise_model <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+                             (1|operator_gt) + 
+                             (1|machine_gt) + 
+                             (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                           data = orange_pairs)
+summary(pairwise_model)
+```
+
+```{r}
+pink_l1 <- readRDS("../data/variability_scans/pink_l1_rfscores.rda")
+pink_l2 <- readRDS("../data/variability_scans/pink_l2_rfscores.rda")
+pink_l3 <- readRDS("../data/variability_scans/pink_l3_rfscores.rda")
+pink_l4 <- readRDS("../data/variability_scans/pink_l4_rfscores.rda")
+pink_l5 <- readRDS("../data/variability_scans/pink_l5_rfscores.rda")
+pink_l6 <- readRDS("../data/variability_scans/pink_l6_rfscores.rda")
+
+pink_ids <- read_csv("../data/variability_scans/pink_gt.csv")
+pink_ids_l1 <- pink_ids %>% mutate(land1 = scan_id, unique_id_l1 = unique_id) %>% select(land1, unique_id_l1)
+pink_ids_l2 <- pink_ids %>% mutate(land2 = scan_id, unique_id_l2 = unique_id) %>% select(land2, unique_id_l2)
+pink_pairs <- rbind(pink_l1, pink_l2, pink_l3, pink_l4, pink_l5, pink_l6)
+pink_pairs <- full_join(pink_pairs, pink_ids_l1)
+pink_pairs <- full_join(pink_pairs, pink_ids_l2)
+```
+
+```{r}
+pink_pairs %>% ggplot() + geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + theme_bw()
+```
+
+```{r}
+pink_pairs <- pink_pairs %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+pink_pairs <- pink_pairs %>%
+  mutate(operator_gt = ifelse(operator_S1 == operator_S2, "Same Operator", "Different Operators"), 
+         round_gt = ifelse(round_S1 == round_S2, "Same Round", "Different Rounds"), 
+         bullet_gt = ifelse(bullet_S1 == bullet_S2, "Same Bullet", "Different Bullets"),
+         machine_gt = ifelse(machine_S1 == machine_S2, "Same Machine", "Different Machines"))
+```
+
+
+```{r}
+pairwise_model <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+                             (1|operator_gt) + 
+                             (1|machine_gt) + 
+                             (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                           data = pink_pairs)
+summary(pairwise_model)
+
+pairwise_model_l1 <- lmer(rfscore ~ (1|bullet_gt) + 
+                            (1|operator_gt) + 
+                            (1|machine_gt) + 
+                            (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                          data = pink_pairs %>% filter(unique_id_l1 == "BL P-1"))
+
+summary(pairwise_model_l1)
+
+pairwise_model_l2 <- lmer(rfscore ~ (1|bullet_gt) + 
+                            (1|operator_gt) + 
+                            (1|machine_gt) + 
+                            (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                          data = pink_pairs %>% filter(unique_id_l1 == "BL P-2"))
+
+summary(pairwise_model_l2)
+```
+
+
+# Linear models??
+```{r}
+pink_lm <- lm(rfscore~ unique_id_l1 + bullet_gt + machine_gt + operator_gt + bullet_gt:machine_gt + bullet_gt:operator_gt + operator_gt:machine_gt, data = pink_pairs)
+anova(pink_lm)
+summary(pink_lm)
+
+
+orange_lm <- lm(rfscore~ unique_id_l1 + bullet_gt + machine_gt + operator_gt + bullet_gt:machine_gt + bullet_gt:operator_gt + operator_gt:machine_gt, data = orange_pairs)
+anova(orange_lm)
+summary(orange_lm)
+```

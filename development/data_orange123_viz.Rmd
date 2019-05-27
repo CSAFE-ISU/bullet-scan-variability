@@ -145,7 +145,7 @@ bo_long %>%
   filter(unique_id == "BL O-1") %>%
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
-  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
   theme_bw() + 
   facet_grid(operator_code~bullet) + 
   labs(title = "Barrel Orange Land 1")
@@ -154,7 +154,7 @@ bo_long %>%
   filter(unique_id == "BL O-2") %>%
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
-  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
   theme_bw() + 
   facet_grid(operator_code~bullet) + 
   labs(title = "Barrel Orange Land 2")
@@ -163,7 +163,7 @@ bo_long %>%
   filter(unique_id == "BL O-3") %>%
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
-  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
   theme_bw() + 
   facet_grid(operator_code~bullet) + 
   labs(title = "Barrel Orange Land 3")
@@ -172,7 +172,7 @@ bo_long %>%
   filter(unique_id == "BL O-4") %>%
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
-  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
   theme_bw() + 
   facet_grid(operator_code~bullet) + 
   labs(title = "Barrel Orange Land 4")
@@ -181,7 +181,7 @@ bo_long %>%
   filter(unique_id == "BL O-5") %>%
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
-  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
   theme_bw() + 
   facet_grid(operator_code~bullet) + 
   labs(title = "Barrel Orange Land 5")
@@ -191,7 +191,7 @@ bo_long %>%
   filter(abs(sig2) <= 20) %>%
   ggplot() + 
   geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(round)), alpha = 0.7) + 
-  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
   theme_bw() + 
   facet_grid(operator_code~bullet) + 
   labs(title = "Barrel Orange Land 6")
@@ -200,3 +200,255 @@ bo_long %>%
 ```
 
 
+
+
+```{r}
+bo_long %>%
+  filter(unique_id == "BL O-1") %>%
+  group_by(operator_code, x_aligned) %>%
+  mutate(operator_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = operator_mean, group = operator_code), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 1", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Operator ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-2") %>%
+  group_by(operator_code, x_aligned) %>%
+  mutate(operator_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = operator_mean, group = operator_code), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 2", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Operator ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-3") %>%
+  filter(sig2 > -5, x_aligned < 2600, x_aligned > 10) %>%
+  group_by(operator_code, x_aligned) %>%
+  mutate(operator_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = operator_mean, group = operator_code), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 3", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Operator ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-4") %>%
+  group_by(operator_code, x_aligned) %>%
+  mutate(operator_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = operator_mean, group = operator_code), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 4", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Operator ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-5") %>%
+  group_by(operator_code, x_aligned) %>%
+  mutate(operator_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = operator_mean, group = operator_code), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 5", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Operator ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-6") %>%
+  group_by(operator_code, x_aligned) %>%
+  mutate(operator_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(operator_code)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = operator_mean, group = operator_code), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 6", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Operator ID")
+```
+
+
+
+
+```{r}
+bo_long %>%
+  filter(unique_id == "BL O-1") %>%
+  group_by(machine, x_aligned) %>%
+  mutate(machine_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = machine_mean, group = machine), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 1", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Machine ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-2") %>%
+  group_by(machine, x_aligned) %>%
+  mutate(machine_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = machine_mean, group = machine), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 2", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Machine ID")
+
+bo_long %>%
+  filter(sig2 > -5, x_aligned < 2600, x_aligned > 10) %>%
+  filter(unique_id == "BL O-3") %>%
+  group_by(machine, x_aligned) %>%
+  mutate(machine_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = machine_mean, group = machine), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 3", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Machine ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-4") %>%
+  group_by(machine, x_aligned) %>%
+  mutate(machine_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = machine_mean, group = machine), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 4", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Machine ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-5") %>%
+  group_by(machine, x_aligned) %>%
+  mutate(machine_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = machine_mean, group = machine), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 5", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Machine ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-6") %>%
+  group_by(machine, x_aligned) %>%
+  mutate(machine_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(machine)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = machine_mean, group = machine), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 6", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Machine ID")
+```
+
+
+
+
+
+```{r}
+bo_long %>%
+  filter(unique_id == "BL O-1") %>%
+  group_by(bullet, x_aligned) %>%
+  mutate(bullet_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = bullet_mean, group = bullet), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 1", x = "Relative X Location", y = "Signature Height") + 
+  scale_color_discrete(name = "Bullet ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-2") %>%
+  group_by(bullet, x_aligned) %>%
+  mutate(bullet_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = bullet_mean, group = bullet), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 2", x = "Relative X Location", y = "Signature Height")+ 
+  scale_color_discrete(name = "Bullet ID")
+
+bo_long %>%  
+  filter(sig2 > -5, x_aligned < 2600, x_aligned > 10) %>%
+  filter(unique_id == "BL O-3") %>%
+  group_by(bullet, x_aligned) %>%
+  mutate(bullet_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = bullet_mean, group = bullet), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 3", x = "Relative X Location", y = "Signature Height")+ 
+  scale_color_discrete(name = "Bullet ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-4") %>%
+  group_by(bullet, x_aligned) %>%
+  mutate(bullet_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = bullet_mean, group = bullet), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 4", x = "Relative X Location", y = "Signature Height")+ 
+  scale_color_discrete(name = "Bullet ID")
+
+bo_long %>%
+  filter(unique_id == "BL O-5") %>%
+  group_by(bullet, x_aligned) %>%
+  mutate(bullet_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = bullet_mean, group = bullet), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 5", x = "Relative X Location", y = "Signature Height")+ 
+  scale_color_discrete(name = "Bullet ID")
+
+bo_long %>%
+  filter(abs(sig2) < 20) %>%
+  filter(unique_id == "BL O-6") %>%
+  group_by(bullet, x_aligned) %>%
+  mutate(bullet_mean = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  geom_line(aes(x = x_aligned, y = bullet_mean, group = bullet), alpha = 0.7) + 
+  theme_bw() + 
+  #facet_wrap(~bullet, nrow = 3) + 
+  labs(title = "Barrel Orange Land 6", x = "Relative X Location", y = "Signature Height")+ 
+  scale_color_discrete(name = "Bullet ID")
+```
