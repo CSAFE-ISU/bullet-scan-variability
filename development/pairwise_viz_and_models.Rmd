@@ -28,7 +28,10 @@ orange_pairs <- full_join(orange_pairs, orange_ids_l2)
 ```
 
 ```{r}
-orange_pairs %>% ggplot() + geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + theme_bw()
+orange_pairs %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~bullet_gt, nrow = 2)
 ```
 
 ```{r}
@@ -77,7 +80,10 @@ pink_pairs <- full_join(pink_pairs, pink_ids_l2)
 ```
 
 ```{r}
-pink_pairs %>% ggplot() + geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + theme_bw()
+pink_pairs %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~bullet_gt, nrow = 2)
 ```
 
 ```{r}
