@@ -1,0 +1,254 @@
+---
+title: "Data Signature Models"
+output: html_document
+---
+
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+library(lme4)
+```
+
+
+## Barrel Orange
+First, we want to read in the data. These are signatures that have already been coaligned within barrel-land.  
+
+```{r}
+orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
+
+orange_sig_data <- orange_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned)) 
+```
+
+Next, we want to get a grid of data that we can use to get estimates of operator, machine variability. 
+
+```{r}
+orange_grid <- orange_sig_data %>%
+  mutate(fixed_BLm = as.factor(fixed_BLm),
+         bullet = as.factor(bullet),
+         operator = as.factor(operator),
+         machine = as.factor(machine),
+         unique_id = as.factor(unique_id))
+
+
+head(orange_grid)
+
+subset_grids <- function(max_x, sample_dist, n_phase){
+  grid <- data.frame(phase = 1:n_phase)
+  phase_dist = sample_dist/n_phase
+  max_val = max_x
+  grid <- grid %>% mutate(sub_grid = purrr::map(phase, .f = function(phase){
+    seq(from = 1 + (phase - 1)*phase_dist, to = max_val, by = sample_dist)
+  }))
+  return(grid)
+}
+
+grid_test <- subset_grids(max(orange_grid$x_aligned), 100, 5)
+grid_test$data <- orange_grid
+
+
+
+subset_by_100 <- seq(1, max(orange_grid$x_aligned), by = 100)
+orange_subset <- orange_grid %>% filter(x_aligned %in% subset_by_100)
+
+orange_subset_l1 <- orange_subset %>% filter(unique_id == "BL O-1")
+orange_subset_l2 <- orange_subset %>% filter(unique_id == "BL O-2")
+orange_subset_l3 <- orange_subset %>% filter(unique_id == "BL O-3")
+orange_subset_l4 <- orange_subset %>% filter(unique_id == "BL O-4")
+orange_subset_l5 <- orange_subset %>% filter(unique_id == "BL O-5")
+orange_subset_l6 <- orange_subset %>% filter(unique_id == "BL O-6")
+
+
+
+## model with everything: doesn't converge
+## model with bullet/unique_id: singular
+
+orange_l1_model_sub <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator), data = orange_subset_l1)
+orange_l2_model_sub <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator), data = orange_subset_l2)
+orange_l3_model_sub <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator), data = orange_subset_l3)
+
+
+orange_model_subset <- lmer(sig2 ~ fixed_BLm + (1|bullet/unique_id) + (1|operator/unique_id), data = orange_subset)
+```
+
+Let's try an "iterative" approach. That is, 
+
+1. Look at overall Sum of Squared Errors (SSE) for all 91 signatures for a single Barrel-Land.  
+2. Allow the means to differ by $x$ location (including an $x$ term in the model). Look at the updated SSE (and thus the reduction in error by including $x$).
+3. Allow the means to differ by bullet; that is, include a bullet term in the model. Look at the remaining SSE (nd thus the reduction in error by including bullet.) 
+4. Allow the means to differ by machine; that is, include a machine term in the model. Look at the remaining SSE. If this reduction in SSE is minor enough, we can exclude machine as part of the variability modeling.  
+
+```{r}
+orange_sig_model_data <- orange_sig_data %>%
+  group_by(unique_id) %>%
+  mutate(mean_signature_all = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned) %>%
+  mutate(mean_signature_byx = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet) %>%
+  mutate(mean_signature_bybullet = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet, machine) %>%
+  mutate(mean_signature_bymachine = mean(sig2, na.rm = T)) %>%
+  ungroup()
+
+head(orange_sig_model_data)
+
+dataInt <- orange_sig_model_data %>%
+  group_by(unique_id) %>%
+  summarize(overall_mean = mean(sig2, na.rm = T))
+
+
+orange_sig_model_data_long <- orange_sig_model_data %>%
+  gather(mean_signature_all:mean_signature_bymachine, key = "model_level", value = "pred_value") %>%
+  mutate(residual = sig2 - pred_value, 
+         squared_error = residual^2)  %>%
+  mutate(model_level = factor(model_level, 
+                              levels = c("mean_signature_all", "mean_signature_byx", "mean_signature_bybullet", "mean_signature_bymachine"), 
+                              labels = c("Model 1 (Intercept)", "Model 2 (X location)", "Model 3 (Bullet)", "Model 4 (Machine)")))
+
+dataSSE <- orange_sig_model_data_long %>%
+  group_by(unique_id, model_level) %>%
+  summarize(model_sse = sum(squared_error, na.rm = T))
+
+orange_sig_model_data_long %>%
+  #filter(abs(sig2) < 25) %>% 
+  filter(unique_id != "BL O-6") %>%
+  ggplot() +
+  geom_line(aes(x = x_aligned, y = residual, group = scan_id, color = factor(bullet)), alpha = 0.5) + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_text(data = dataSSE, aes(x = 1000, y = 20, label = paste0("Model SSE = ", round(model_sse, 1))), size = 3) + 
+  facet_grid(model_level~unique_id) + 
+  theme_bw() + 
+  scale_color_discrete(name = "Bullet Code") + 
+  labs(x = "Relative X Location", y = "Residual Height", title = "Barrel Orange")
+
+```
+
+
+
+## Barrel Pink
+First, we want to read in the data. These are signatures that have already been coaligned within barrel-land.  
+
+```{r}
+pink_sig_data <- readRDS("../data/variability_scans/pink_aligned_sigs.rda")
+
+pink_sig_data <- pink_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned)) 
+```
+
+
+```{r}
+pink_sig_model_data <- pink_sig_data %>%
+  group_by(unique_id) %>%
+  mutate(mean_signature_all = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned) %>%
+  mutate(mean_signature_byx = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet) %>%
+  mutate(mean_signature_bybullet = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet, machine) %>%
+  mutate(mean_signature_bymachine = mean(sig2, na.rm = T)) %>%
+  ungroup() 
+
+head(pink_sig_model_data)
+
+
+pink_sig_model_data_long <- pink_sig_model_data %>%
+  gather(mean_signature_all:mean_signature_bymachine, key = "model_level", value = "pred_value") %>%
+  mutate(residual = sig2 - pred_value, 
+         squared_error = residual^2)  %>%
+  mutate(model_level = factor(model_level, 
+                              levels = c("mean_signature_all", "mean_signature_byx",
+                                         "mean_signature_bybullet", "mean_signature_bymachine"), 
+                              labels = c("Model 1 (Intercept)", "Model 2 (X location)", 
+                                         "Model 3 (Bullet)", "Model 4 (Machine)")))
+
+dataSSE_pink <- pink_sig_model_data_long %>%
+  group_by(unique_id, model_level) %>%
+  summarize(model_sse = sum(squared_error, na.rm = T))
+
+pink_sig_model_data_long %>%
+  #filter(abs(sig2) < 25) %>% 
+  #filter(unique_id != "BL O-6") %>%
+  ggplot() +
+  geom_line(aes(x = x_aligned, y = residual, group = scan_id, color = factor(bullet)), alpha = 0.5) + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_text(data = dataSSE_pink, aes(x = 1000, y = 20, label = paste0("Model SSE = ", round(model_sse, 1))), size = 3) + 
+  facet_grid(model_level~unique_id) + 
+  theme_bw() + 
+  scale_color_discrete(name = "Bullet Code") + 
+  labs(x = "Relative X Location", y = "Residual Height", title = "Barrel Pink")
+
+```
+
+
+
+
+
+## Barrel Green
+First, we want to read in the data. These are signatures that have already been coaligned within barrel-land.  
+
+```{r}
+green_sig_data <- readRDS("../data/variability_scans/green_aligned_sigs.rda")
+
+green_sig_data <- green_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned)) 
+```
+
+
+```{r}
+green_sig_model_data <- green_sig_data %>%
+  group_by(unique_id) %>%
+  mutate(mean_signature_all = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned) %>%
+  mutate(mean_signature_byx = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet) %>%
+  mutate(mean_signature_bybullet = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet, machine) %>%
+  mutate(mean_signature_bymachine = mean(sig2, na.rm = T)) %>%
+  ungroup()
+
+head(green_sig_model_data)
+
+
+green_sig_model_data_long <- green_sig_model_data %>%
+  gather(mean_signature_all:mean_signature_bymachine, key = "model_level", value = "pred_value") %>%
+  mutate(residual = sig2 - pred_value, 
+         squared_error = residual^2)  %>%
+  mutate(model_level = factor(model_level, 
+                              levels = c("mean_signature_all", "mean_signature_byx", 
+                                         "mean_signature_bybullet", "mean_signature_bymachine"), 
+                              labels = c("Model 1 (Intercept)", "Model 2 (X location)", 
+                                         "Model 3 (Bullet)", "Model 4 (Machine)")))
+
+dataSSE_green <- green_sig_model_data_long %>%
+  group_by(unique_id, model_level) %>%
+  summarize(model_sse = sum(squared_error, na.rm = T))
+
+green_sig_model_data_long %>%
+  filter(abs(sig2) < 25) %>% 
+  #filter(unique_id != "BL O-6") %>%
+  ggplot() +
+  geom_line(aes(x = x_aligned, y = residual, group = scan_id, color = factor(bullet)), alpha = 0.5) + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_text(data = dataSSE_green, aes(x = 1000, y = 20, label = paste0("Model SSE = ", round(model_sse, 1))), size = 3) + 
+  facet_grid(model_level~unique_id) + 
+  theme_bw() + 
+  scale_color_discrete(name = "Bullet Code") + 
+  labs(x = "Relative X Location", y = "Residual Height", title = "Barrel Green")
+
+```

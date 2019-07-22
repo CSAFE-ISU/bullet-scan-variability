@@ -1,0 +1,126 @@
+---
+title: "function to make a pairing ID"
+output: html_document
+---
+First, read in the packages.  
+
+```{r packages, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(gridExtra)
+library(randomForest)
+```
+
+
+I want to do two things: 
+
+(1) Make a function and see if I can get the right things to work for the "beginning" of the pairwise comparisons pipeline.
+(2) Look at already calculated RF scores, apply it, and see whether RF scores for pairs with the same "pairing_ID" are equivalent. 
+
+
+## Step 1: Make the function and test using the orange_sigs.  
+
+Input should be a vector of scan_ids.
+
+```{r}
+orange_sigs <- readRDS("../data/variability_scans/orange_123_sigs.rda")
+orange_lands <- unique(orange_sigs$scan_id) 
+
+make_comparison_grid <- function(scan_ids, self_comparisons = T){
+  combos <- combn(scan_ids, 2) %>% t()
+  combos_df <- data.frame(land1 = combos[,1], land2 = combos[,2]) 
+  if(self_comparisons == T){
+    self_combos <- data.frame(land1 = scan_ids, land2 = scan_ids)
+    combos_df <- rbind(combos_df, self_combos) %>%
+      mutate(pairing_id = paste0(land1, "_", land2))
+  }
+  else(combos_df <- combos_df %>% 
+         mutate(pairing_id = paste0(land1, "_", land2)))
+  return(combos_df)
+}
+
+check_orange_grid <- make_comparison_grid(scan_ids = orange_lands)
+
+
+```
+
+Things are looking good! 
+
+Now let's see if randomForest scores are "symmetric" for comparisons of the same signatures. We'll test with the scores for Barrel Orange, Bullet 1. 
+
+```{r}
+orange_b1_scores <- readRDS("../data/variability_scans/orange_b1_rfscores.rda")
+
+check_orange_grid <- check_orange_grid %>% mutate(land1 = as.character(land1), land2 = as.character(land2))
+orange_b1_scores <- left_join(orange_b1_scores, check_orange_grid)
+
+orange_b1_scores <- orange_b1_scores %>% mutate(pairing_id_alt = paste0(land2, "_", land1),
+                            pairing_id_combo = ifelse(is.na(pairing_id), pairing_id_alt, pairing_id))
+
+orange_b1_scores %>% 
+  group_by(pairing_id_combo) %>% 
+  summarise(sd(rfscore, na.rm = T))
+```
+
+It appears that when 2 combinations have the same "pairing ID" - essentially, they are the same comparison - the RFscores are the same. This is what we expect. 
+
+Keep in mind we want to use this function as part of the R\&R pipeline, not for general comparison of two bullets. Once we already know the "ground truth" of what LEAs match what LEAs. 
+
+I am curious about the whole "pairwise visuals" thing though... 
+
+Things get a little weird though - so, you can still do visuals, if you're careful. But because visuals are in the lane of "land_S1", "land_S2" and all of those things, if you try to subset, you get weird things. Like, for example, when comparing Orange Bullet 1 if you subset to make "operator_S1" Connor, only Connor and Mya show up as operators in "S2" because of the order the combinations were grabbed. Allison, Anyesha, and Carley must be "operator_S1" for all of their comparisons with Connor's signatures. 
+
+However, this shouldn't matter for the pairwise comparisons modeling, because we are using an indicator of "__ S1 == __ S2", so it doesn't matter which order they come in, just whether they are equivalent or not. 
+
+```{r}
+rfscores_orange_b1 <- rfscores_orange_b1 %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+
+orange_b1_scores <- orange_b1_scores %>%
+  mutate(id_S1 = land1, id_S2 = land2) %>%
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+
+## the "usual" visualization for the whole thing
+orange_b1_scores %>%
+  filter(operator_S1 == "Connor" & operator_S2 == "Allison") %>% 
+  filter(round_S1 == "Round 1", machine_S1 == "Sneox1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 1) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+## the filtered viz for just comparisons that involve non-NA pairing_ids. 
+orange_b1_scores %>%
+  filter(!is.na(pairing_id)) %>%
+  filter(operator_S1 == "Connor", machine_S1 == "Sneox1", round_S1 == "Round 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~operator_S2 + machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+

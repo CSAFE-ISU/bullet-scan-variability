@@ -1,0 +1,484 @@
+---
+title: "Research Update: July 2019"
+author: "Kiegan Rice"
+output: html_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(randomForest)
+library(lme4)
+library(gridExtra)
+library(zoo)
+library(knitr)
+```
+
+# Signature-level Modeling  
+
+I am working on two types of signature-level modeling. The first is subsampled models, in which we subsample to every $100^{th}$ $x$ location. The second is attempting to use an entire signature and model out the structure of the signature itself.  
+
+## Subsampled models  
+
+I haven't been able to come up with a clean, reproducible way to do these models yet. However, I have some examples from each barrel of how things vary across the 5-phased models.
+
+
+#### Barrel-Land O-1 Results  
+
+```{r, echo = F, warning = F, message = F}
+orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
+
+orange_sig_long <- orange_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+orange_grid <- orange_sig_long %>%
+  mutate(fixed_BLm = as.factor(fixed_BLm),
+         bullet = as.factor(bullet),
+         operator = as.factor(operator),
+         machine = as.factor(machine),
+         unique_id = as.factor(unique_id))
+
+subset_1 <- seq(1, max(orange_grid$x_aligned), by = 100)
+subset_2 <- seq(21, max(orange_grid$x_aligned), by = 100)
+subset_3 <- seq(41, max(orange_grid$x_aligned), by = 100)
+subset_4 <- seq(61, max(orange_grid$x_aligned), by = 100)
+subset_5 <- seq(81, max(orange_grid$x_aligned), by = 100)
+
+orange_subset_1 <- orange_grid %>% filter(x_aligned %in% subset_1)
+orange_subset_2 <- orange_grid %>% filter(x_aligned %in% subset_2)
+orange_subset_3 <- orange_grid %>% filter(x_aligned %in% subset_3)
+orange_subset_4 <- orange_grid %>% filter(x_aligned %in% subset_4)
+orange_subset_5 <- orange_grid %>% filter(x_aligned %in% subset_5)
+
+
+## BL O-1
+orange_subset_1_l1 <- orange_subset_1 %>% filter(unique_id == "BL O-1")
+orange_subset_2_l1 <- orange_subset_2 %>% filter(unique_id == "BL O-1")
+orange_subset_3_l1 <- orange_subset_3 %>% filter(unique_id == "BL O-1")
+orange_subset_4_l1 <- orange_subset_4 %>% filter(unique_id == "BL O-1")
+orange_subset_5_l1 <- orange_subset_5 %>% filter(unique_id == "BL O-1")
+
+orange_l1_model_1 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = orange_subset_1_l1)
+orange_l1_model_2 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = orange_subset_2_l1)
+orange_l1_model_3 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = orange_subset_3_l1)
+orange_l1_model_4 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = orange_subset_4_l1)
+orange_l1_model_5 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = orange_subset_5_l1)
+
+#summary(orange_l1_model_1)
+#summary(orange_l1_model_2)
+#summary(orange_l1_model_3)
+#summary(orange_l1_model_4)
+#summary(orange_l1_model_5)
+
+
+```
+
+
+```{r, echo = F, warning = F, message = F, fig.width = 10, fig.height = 4}
+orange_subset_l1 <- orange_grid %>% filter(unique_id == "BL O-1")
+
+orange_subset_l1 %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey50", alpha = 0.5) + 
+  geom_vline(xintercept = subset_1, color = "black", linetype = 1, alpha = 0.8) + 
+  geom_vline(xintercept = subset_2, color = "red", linetype = 2, alpha = 0.8) + 
+  geom_vline(xintercept = subset_3, color = "blue", linetype = 3, alpha = 0.8) + 
+  geom_vline(xintercept = subset_4, color = "orange", linetype = 4, alpha = 0.8) + 
+  geom_vline(xintercept = subset_5, color = "green", linetype = 5, alpha = 0.8) + 
+  theme_bw() + 
+  ylim(c(-8, 10))
+```
+
+```{r, echo = F, warning = F, message = F}
+
+orange_1_5phase_results <- data.frame(random_effect = c("operator", "bullet", "machine", "residual"),
+                                      phase_1 = c(0.0425, 0.0429, 0.0000, 0.7059), 
+                                      phase_2 = c(0.0277, 0.0975, 0.0017, 0.6837), 
+                                      phase_3 = c(0.0009, 0.0980, 0.0003, 0.6686),
+                                      phase_4 = c(0.0235, 0.0917, 0.0072, 0.7245), 
+                                      phase_5 = c(0.0000, 0.0453, 0.0000, 0.7760))
+
+kable(orange_1_5phase_results, caption = "Random effects for 5-phased subsample signature models for Barrel-Land O-1 (Hamby).")
+```
+
+
+#### Barrel-Land P-1 Results  
+
+```{r, echo = F, warning = F, message = F}
+pink_sig_data <- readRDS("../data/variability_scans/pink_aligned_sigs.rda")
+
+pink_sig_long <- pink_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+pink_grid <- pink_sig_long %>%
+  mutate(fixed_BLm = as.factor(fixed_BLm),
+         bullet = as.factor(bullet),
+         operator = as.factor(operator),
+         machine = as.factor(machine),
+         unique_id = as.factor(unique_id))
+
+subset_1 <- seq(1, max(pink_grid$x_aligned), by = 100)
+subset_2 <- seq(21, max(pink_grid$x_aligned), by = 100)
+subset_3 <- seq(41, max(pink_grid$x_aligned), by = 100)
+subset_4 <- seq(61, max(pink_grid$x_aligned), by = 100)
+subset_5 <- seq(81, max(pink_grid$x_aligned), by = 100)
+
+pink_subset_1 <- pink_grid %>% filter(x_aligned %in% subset_1)
+pink_subset_2 <- pink_grid %>% filter(x_aligned %in% subset_2)
+pink_subset_3 <- pink_grid %>% filter(x_aligned %in% subset_3)
+pink_subset_4 <- pink_grid %>% filter(x_aligned %in% subset_4)
+pink_subset_5 <- pink_grid %>% filter(x_aligned %in% subset_5)
+
+
+## BL P-1
+pink_subset_1_l1 <- pink_subset_1 %>% filter(unique_id == "BL P-1")
+pink_subset_2_l1 <- pink_subset_2 %>% filter(unique_id == "BL P-1")
+pink_subset_3_l1 <- pink_subset_3 %>% filter(unique_id == "BL P-1")
+pink_subset_4_l1 <- pink_subset_4 %>% filter(unique_id == "BL P-1")
+pink_subset_5_l1 <- pink_subset_5 %>% filter(unique_id == "BL P-1")
+
+pink_l1_model_1 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = pink_subset_1_l1)
+pink_l1_model_2 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = pink_subset_2_l1)
+pink_l1_model_3 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = pink_subset_3_l1)
+pink_l1_model_4 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = pink_subset_4_l1)
+pink_l1_model_5 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = pink_subset_5_l1)
+
+#summary(pink_l1_model_1)
+#summary(pink_l1_model_2)
+#summary(pink_l1_model_3)
+#summary(pink_l1_model_4)
+#summary(pink_l1_model_5)
+
+
+```
+
+
+```{r, echo = F, warning = F, message = F, fig.width = 10, fig.height = 4}
+pink_subset_l1 <- pink_grid %>% filter(unique_id == "BL P-1")
+
+pink_subset_l1 %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey50", alpha = 0.5) + 
+  geom_vline(xintercept = subset_1, color = "black", linetype = 1, alpha = 0.8) + 
+  geom_vline(xintercept = subset_2, color = "red", linetype = 2, alpha = 0.8) + 
+  geom_vline(xintercept = subset_3, color = "blue", linetype = 3, alpha = 0.8) + 
+  geom_vline(xintercept = subset_4, color = "orange", linetype = 4, alpha = 0.8) + 
+  geom_vline(xintercept = subset_5, color = "green", linetype = 5, alpha = 0.8) + 
+  theme_bw()
+```
+
+```{r, echo = F, warning = F, message = F}
+
+pink_1_5phase_results <- data.frame(random_effect = c("operator", "bullet", "machine", "residual"),
+                                      phase_1 = c(0.0000, 0.0154, 0.0000, 1.1042), 
+                                      phase_2 = c(0.0000, 0.0931, 0.0291, 1.1494), 
+                                      phase_3 = c(0.0000, 0.0738, 0.0000, 1.1861),
+                                      phase_4 = c(0.0000, 0.0000, 0.0000, 1.2220), 
+                                      phase_5 = c(0.0000, 0.0000, 0.0000, 1.0980))
+
+kable(pink_1_5phase_results, caption = "Random effects for 5-phased subsample signature models for Barrel-Land P-1 (Houston).")
+```
+
+#### Barrel-Land G-1 Results  
+
+```{r, echo = F, warning = F, message = F}
+green_sig_data <- readRDS("../data/variability_scans/green_aligned_sigs.rda")
+
+green_sig_long <- green_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+green_grid <- green_sig_long %>%
+  mutate(fixed_BLm = as.factor(fixed_BLm),
+         bullet = as.factor(bullet),
+         operator = as.factor(operator),
+         machine = as.factor(machine),
+         unique_id = as.factor(unique_id))
+
+subset_1 <- seq(1, max(green_grid$x_aligned), by = 100)
+subset_2 <- seq(21, max(green_grid$x_aligned), by = 100)
+subset_3 <- seq(41, max(green_grid$x_aligned), by = 100)
+subset_4 <- seq(61, max(green_grid$x_aligned), by = 100)
+subset_5 <- seq(81, max(green_grid$x_aligned), by = 100)
+
+green_subset_1 <- green_grid %>% filter(x_aligned %in% subset_1)
+green_subset_2 <- green_grid %>% filter(x_aligned %in% subset_2)
+green_subset_3 <- green_grid %>% filter(x_aligned %in% subset_3)
+green_subset_4 <- green_grid %>% filter(x_aligned %in% subset_4)
+green_subset_5 <- green_grid %>% filter(x_aligned %in% subset_5)
+
+
+## BL G-2
+green_subset_1_l2 <- green_subset_1 %>% filter(unique_id == "BL G-2")
+green_subset_2_l2 <- green_subset_2 %>% filter(unique_id == "BL G-2")
+green_subset_3_l2 <- green_subset_3 %>% filter(unique_id == "BL G-2")
+green_subset_4_l2 <- green_subset_4 %>% filter(unique_id == "BL G-2")
+green_subset_5_l2 <- green_subset_5 %>% filter(unique_id == "BL G-2")
+
+green_l2_model_1 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = green_subset_1_l2)
+green_l2_model_2 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = green_subset_2_l2)
+green_l2_model_3 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = green_subset_3_l2)
+green_l2_model_4 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = green_subset_4_l2)
+green_l2_model_5 <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = green_subset_5_l2)
+
+#summary(green_l2_model_1)
+#summary(green_l2_model_2)
+#summary(green_l2_model_3)
+#summary(green_l2_model_4)
+#summary(green_l2_model_5)
+
+
+```
+
+
+```{r, echo = F, warning = F, message = F, fig.width = 10, fig.height = 4}
+green_subset_l2 <- green_grid %>% filter(unique_id == "BL G-2")
+
+green_subset_l2 %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey50", alpha = 0.5) + 
+  geom_vline(xintercept = subset_1, color = "black", linetype = 1, alpha = 0.8) + 
+  geom_vline(xintercept = subset_2, color = "red", linetype = 2, alpha = 0.8) + 
+  geom_vline(xintercept = subset_3, color = "blue", linetype = 3, alpha = 0.8) + 
+  geom_vline(xintercept = subset_4, color = "orange", linetype = 4, alpha = 0.8) + 
+  geom_vline(xintercept = subset_5, color = "green", linetype = 5, alpha = 0.8) + 
+  theme_bw()
+```
+
+```{r, echo = F, warning = F, message = F}
+
+green_1_5phase_results <- data.frame(random_effect = c("operator", "bullet", "machine", "residual"),
+                                      phase_1 = c(0.0000, 0.0357, 0.0000, 0.5979), 
+                                      phase_2 = c(0.0000, 0.0296, 0.0000, 0.5716), 
+                                      phase_3 = c(0.0000, 0.0287, 0.0144, 0.5835),
+                                      phase_4 = c(0.0187, 0.0199, 0.0169, 0.6046), 
+                                      phase_5 = c(0.0019, 0.0284, 0.0000, 0.6051))
+
+kable(green_1_5phase_results, caption = "Random effects for 5-phased subsample signature models for Barrel-Land G-1 (CSAFE Persistence).")
+```
+
+
+
+## Full models (iterative structure removal)  
+
+One approach to modeling signatures is to iteratively remove elements of the signature which contribute to underlying structure, or signal. R\&R studies aim to measure the variability - we can think of this as the *noise* - surrounding a particular structure. The structure, which we can think of as the *signal* in this case, is of less interest than the variability patterns surrounding it.  
+
+However, lots of elements can contribute to the structure. In our case, some of the study design elements contribute.  
+
+```{r, echo = F, warning = F, message = F, fig.width = 10, fig.height = 10}
+orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
+
+orange_sig_data <- orange_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned)) 
+
+orange_sig_model_data <- orange_sig_data %>%
+  group_by(unique_id) %>%
+  mutate(mean_signature_all = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned) %>%
+  mutate(mean_signature_byx = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet) %>%
+  mutate(mean_signature_bybullet = mean(sig2, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id, x_aligned, bullet, machine) %>%
+  mutate(mean_signature_bymachine = mean(sig2, na.rm = T)) %>%
+  ungroup()
+
+dataInt <- orange_sig_model_data %>%
+  group_by(unique_id) %>%
+  summarize(overall_mean = mean(sig2, na.rm = T))
+
+
+orange_sig_model_data_long <- orange_sig_model_data %>%
+  gather(mean_signature_all:mean_signature_bymachine, key = "model_level", value = "pred_value") %>%
+  mutate(residual = sig2 - pred_value, 
+         squared_error = residual^2)  %>%
+  mutate(model_level = factor(model_level, 
+                              levels = c("mean_signature_all", "mean_signature_byx", 
+                                         "mean_signature_bybullet", "mean_signature_bymachine"), 
+                              labels = c("Model 1 (Intercept)", "Model 2 (X location)", 
+                                         "Model 3 (Bullet)", "Model 4 (Machine)")))
+
+dataSSE <- orange_sig_model_data_long %>%
+  group_by(unique_id, model_level) %>%
+  summarize(model_sse = sum(squared_error, na.rm = T))
+
+orange_sig_model_data_long %>%
+  #filter(abs(sig2) < 25) %>% 
+  filter(unique_id != "BL O-6") %>%
+  ggplot() +
+  geom_line(aes(x = x_aligned, y = residual, 
+                group = scan_id, color = factor(bullet)), alpha = 0.5) + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_text(data = dataSSE, 
+            aes(x = 1000, y = 20, label = paste0("Model SSE = ", round(model_sse, 1))), 
+            size = 3) + 
+  facet_grid(model_level~unique_id) + 
+  theme_bw() + 
+  scale_color_discrete(name = "Bullet Code") + 
+  labs(x = "Relative X Location", y = "Residual Height", title = "Barrel Orange")
+
+```
+
+
+
+
+
+# Pairwise Modeling  
+
+## pairing_id generator  
+
+### The problem: 
+
+Pairwise comparisons pipeline in `bulletxtrctr` uses `expand.grid` to create a grid of all pairwise comparisons for a set of LEA scans. This results in each pair of LEAs being compared twice. For example:
+
+```{r}
+leas <- c("Land A", "Land B", "Land C")
+
+expand.grid(land1 = leas, land2 = leas, stringsAsFactors = F)
+
+```
+
+So we have "Land B - Land A" compared in row 2, and "Land A - Land B" compared in row 4. These are the same pairwise comparison.  
+
+In reality, we only need "Land A - Land B" to be compared ONCE. 
+
+For modeling the variability of pairwise comparison scores, allowing each pair to be compared twice could artifically reduce the variability present in scores by duplicating scores and increasing sample sizes.  
+
+
+### The solution: 
+
+Function `make_comparison_grid` which takes in a list of LEA scan IDs and returns a data frame with columns `land1`, `land2`, and `pairing_id`. Instead of using `expand.grid`, it uses the `combn` function to find all combinations of size 2 within the vector of scan IDs. 
+
+```{r}
+make_comparison_grid <- function(scan_ids, self_comparisons = T){
+  combos <- combn(scan_ids, 2) %>% t()
+  combos_df <- data.frame(land1 = combos[,1], land2 = combos[,2]) 
+  if(self_comparisons == T){
+    self_combos <- data.frame(land1 = scan_ids, land2 = scan_ids)
+    combos_df <- rbind(combos_df, self_combos) %>%
+      mutate(pairing_id = paste0(land1, "_", land2))
+  }
+  else(combos_df <- combos_df %>% 
+         mutate(pairing_id = paste0(land1, "_", land2)))
+  return(combos_df)
+}
+
+make_comparison_grid(scan_ids = leas)
+```
+
+You can also choose whether to include `self_comparisons`, which would be comparing "Land A - Land A", etc. This is the equivalent to including the diagonal in a grid of comparisons. The default is to include these comparisons.  
+
+```{r}
+make_comparison_grid(scan_ids = leas, self_comparisons = F)
+```
+
+This is a relatively simple solution, but will significantly reduce computation time when completing pairwise comparisons because it reduces the required number of comparisons from $n^2$ to $\frac{n(n+1)}{2}$ - nearly in half. An example of how this would update the comparison of two bullets is seen below: 
+
+```{r, echo = F, warning = F, message = F, fig.width =10}
+orange_example_scores <- readRDS("../data/variability_scans/orange_b123_rfscores.rda")
+
+orange_example_scores <- orange_example_scores %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+    separate(col = id_S1, 
+            into = c("barrel_S1", "land_S1", "bullet_S1", 
+                      "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+    separate(col = id_S2, 
+            into = c("barrel_S2", "land_S2", "bullet_S2", 
+                      "operator_S2", "machine_S2", "round_S2"), sep = "-") %>%
+  filter(operator_S1 == "Connor", operator_S2 == "Connor") %>%
+  filter(bullet_S1 != "Bullet 3", bullet_S2 != "Bullet 3")
+
+
+full_grid_plot <- orange_example_scores %>% 
+  ggplot(aes(x = land_S1, y = land_S2, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = 0.5) +
+  facet_grid(bullet_S1 ~ bullet_S2) +
+  labs(x = "Land A", y = "Land B", title = "Pairwise Comparisons: \n expand.grid") + 
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+orange_example_ids <- unique(orange_example_scores$land1)
+orange_new_grid <- make_comparison_grid(orange_example_ids)
+
+orange_example_scores <- left_join(orange_example_scores, orange_new_grid)
+
+reduced_grid_plot <- orange_example_scores %>%
+  filter(!is.na(pairing_id)) %>%
+  ggplot(aes(x = land_S1, y = land_S2, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = 0.5) +
+  facet_grid(bullet_S1 ~ bullet_S2) +
+  labs(x = "Land A", y = "Land B", title = "Pairwise Comparisons: \n make_comparison_grid") + 
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+grid.arrange(full_grid_plot, reduced_grid_plot, nrow = 1)
+
+```
+
+You still get all the important comparisons, but you have about half the computing time required to actually get to all those RFscores!  
+
+
+Another thing to note is that even if you only calculate this reduced number of comparisons, you can still generate the visuals for the "full grid" by re-generating the alternative pairing ID's. You can generate an alternate version, using `NA` values when it is a self-comparison (i.e., a scan to itself). Then once the alternate name is generated, you can gather the two names, which fills in the RFscore values for both versions of the name. Thus, you can plot the whole grid! The function is below.
+
+```{r}
+expand_grid_visual <- function(pairing_id, rfscore){
+  comp_grid <- data.frame(pairing_id = pairing_id, rfscore = rfscore)
+  comp_grid <- comp_grid %>% mutate(pairing_id_alt = purrr::map_chr(as.character(pairing_id), .f = function(pairing_id){
+    land1 = strsplit(pairing_id, "_")[[1]][1]
+    land2 = strsplit(pairing_id, "_")[[1]][2]
+    
+    alt_id = ifelse(land1 == land2, NA, paste0(land2, "_", land1))
+    return(alt_id)
+  }))
+  
+  comp_grid_long <- 
+    comp_grid %>% 
+    mutate(pairing_id = as.character(pairing_id)) %>%
+    gather(c(pairing_id, pairing_id_alt), 
+           key = "id_method", value = "id_value") %>%
+    mutate(id_dummy = id_value) %>%
+    separate(col = id_dummy, into = c("land1", "land2"), sep = "_") %>%
+    filter(!is.na(id_value))
+  return(comp_grid_long)
+}
+
+```
+
+
+A plot of the reduced and then back-expanded RFscores is below: 
+
+
+```{r, echo = F, warning = F, message = F, fig.width = 10}
+reduced_grid <- orange_example_scores %>%
+  filter(!is.na(pairing_id))
+
+expanded_grid <- expand_grid_visual(pairing_id = reduced_grid$pairing_id, rfscore = reduced_grid$rfscore)
+
+expanded_grid_plot <- expanded_grid %>% 
+    mutate(id_S1 = land1, id_S2 = land2) %>% 
+    separate(col = id_S1, 
+            into = c("barrel_S1", "land_S1", "bullet_S1", 
+                      "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+    separate(col = id_S2, 
+            into = c("barrel_S2", "land_S2", "bullet_S2", 
+                      "operator_S2", "machine_S2", "round_S2"), sep = "-") %>%
+  ggplot(aes(x = land_S1, y = land_S2, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = 0.5) +
+  facet_grid(bullet_S1 ~ bullet_S2) +
+  labs(x = "Land A", y = "Land B", title = "Pairwise Comparisons: \n expand_grid_visual") + 
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+grid.arrange(reduced_grid_plot, expanded_grid_plot, nrow = 1)
+```
+
+
+
+### How does this change modeling??
