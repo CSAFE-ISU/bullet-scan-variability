@@ -482,3 +482,94 @@ grid.arrange(reduced_grid_plot, expanded_grid_plot, nrow = 1)
 
 
 ### How does this change modeling??
+```{r, echo = F, warning = F, message = F}
+orange_l1 <- readRDS("../data/variability_scans/orange_l1_rfscores.rda")
+orange_l2 <- readRDS("../data/variability_scans/orange_l2_rfscores.rda")
+orange_l3 <- readRDS("../data/variability_scans/orange_l3_rfscores.rda")
+orange_l4 <- readRDS("../data/variability_scans/orange_l4_rfscores.rda")
+orange_l5 <- readRDS("../data/variability_scans/orange_l5_rfscores.rda")
+orange_l6 <- readRDS("../data/variability_scans/orange_l6_rfscores.rda")
+
+orange_ids <- read_csv("../data/variability_scans/orange_gt.csv")
+orange_ids_l1 <- orange_ids %>% mutate(land1 = scan_id, unique_id_l1 = unique_id) %>% select(land1, unique_id_l1)
+orange_ids_l2 <- orange_ids %>% mutate(land2 = scan_id, unique_id_l2 = unique_id) %>% select(land2, unique_id_l2)
+orange_pairs <- rbind(orange_l1, orange_l2, orange_l3, orange_l4, orange_l5, orange_l6)
+orange_pairs <- full_join(orange_pairs, orange_ids_l1)
+orange_pairs <- full_join(orange_pairs, orange_ids_l2)
+
+orange_pairs <- orange_pairs %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+orange_pairs <- orange_pairs %>%
+  mutate(operator_gt = ifelse(operator_S1 == operator_S2, "Same Operator", "Different Operators"), 
+         round_gt = ifelse(round_S1 == round_S2, "Same Round", "Different Rounds"), 
+         bullet_gt = ifelse(bullet_S1 == bullet_S2, "Same Bullet", "Different Bullets"),
+         machine_gt = ifelse(machine_S1 == machine_S2, "Same Machine", "Different Machines"))
+#orange_pairs %>% ggplot() + 
+#  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+#  theme_bw() + 
+#  facet_wrap(~bullet_gt, nrow = 2)
+```
+
+```{r, echo = F, warning = F, message = F}
+pairwise_model <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+                             (1|operator_gt) + 
+                             (1|machine_gt) + 
+                             (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                           data = orange_pairs)
+#summary(pairwise_model)
+
+orange_ids <- unique(orange_pairs$land1)
+orange_grid_reduced <- make_comparison_grid(orange_ids)
+orange_pairs_reduced <- left_join(orange_pairs, orange_grid_reduced)
+orange_pairs_reduced <- orange_pairs_reduced %>% filter(!is.na(pairing_id))
+
+pairwise_model_reduced <-  lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+                             (1|operator_gt) + 
+                             (1|machine_gt) + 
+                             (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                           data = orange_pairs_reduced)
+
+pairwise_model
+pairwise_model_reduced
+```
+
+```{r, echo = F, warning = F, message = F}
+orange_pairs %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  labs(title = "Full Grid") + 
+  scale_fill_discrete(name = "Unique ID")
+  #facet_wrap(~bullet_gt, nrow = 2)
+
+orange_pairs_reduced %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  labs(title = "Reduced Grid") + 
+  scale_fill_discrete(name = "Unique ID")
+  #facet_wrap(~bullet_gt, nrow = 2)
+
+orange_pairs %>% ggplot() + 
+  geom_histogram(aes(x = rfscore, fill = factor(unique_id_l1)), alpha = 0.6, position = "identity") + 
+  theme_bw() + 
+  labs(title = "Full Grid") + 
+  scale_fill_discrete(name = "Unique ID")
+  #facet_wrap(~bullet_gt, nrow = 2)
+
+orange_pairs_reduced %>% ggplot() + 
+  geom_histogram(aes(x = rfscore, fill = factor(unique_id_l1)), alpha = 0.6, position = "identity") + 
+  theme_bw() + 
+  labs(title = "Reduced Grid") + 
+  scale_fill_discrete(name = "Unique ID")
+  #facet_wrap(~bullet_gt, nrow = 2)
+```

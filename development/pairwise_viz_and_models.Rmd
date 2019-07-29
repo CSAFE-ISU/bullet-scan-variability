@@ -28,13 +28,6 @@ orange_pairs <- full_join(orange_pairs, orange_ids_l2)
 ```
 
 ```{r}
-orange_pairs %>% ggplot() + 
-  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
-  theme_bw() + 
-  facet_wrap(~bullet_gt, nrow = 2)
-```
-
-```{r}
 orange_pairs <- orange_pairs %>% 
   mutate(id_S1 = land1, id_S2 = land2) %>% 
   separate(col = id_S1, 
@@ -43,24 +36,27 @@ orange_pairs <- orange_pairs %>%
   separate(col = id_S2, 
            into = c("barrel_S2", "land_S2", "bullet_S2", 
                     "operator_S2", "machine_S2", "round_S2"), sep = "-")
-
 orange_pairs <- orange_pairs %>%
   mutate(operator_gt = ifelse(operator_S1 == operator_S2, "Same Operator", "Different Operators"), 
          round_gt = ifelse(round_S1 == round_S2, "Same Round", "Different Rounds"), 
          bullet_gt = ifelse(bullet_S1 == bullet_S2, "Same Bullet", "Different Bullets"),
          machine_gt = ifelse(machine_S1 == machine_S2, "Same Machine", "Different Machines"))
+
+orange_pairs %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~bullet_gt, nrow = 2)
 ```
 
-
 ```{r}
-pairwise_model <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+pairwise_model_orange <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
                              (1|operator_gt) + 
                              (1|machine_gt) + 
                              (1|operator_gt:bullet_gt) + 
                              (1|operator_gt:machine_gt) + 
                              (1|bullet_gt:machine_gt), 
-                           data = orange_pairs)
-summary(pairwise_model)
+                           data = orange_pairs %>% filter(unique_id_l1 != "BL O-6"))
+summary(pairwise_model_orange)
 ```
 
 ```{r}
@@ -79,12 +75,7 @@ pink_pairs <- full_join(pink_pairs, pink_ids_l1)
 pink_pairs <- full_join(pink_pairs, pink_ids_l2)
 ```
 
-```{r}
-pink_pairs %>% ggplot() + 
-  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
-  theme_bw() + 
-  facet_wrap(~bullet_gt, nrow = 2)
-```
+
 
 ```{r}
 pink_pairs <- pink_pairs %>% 
@@ -103,16 +94,22 @@ pink_pairs <- pink_pairs %>%
          machine_gt = ifelse(machine_S1 == machine_S2, "Same Machine", "Different Machines"))
 ```
 
+```{r}
+pink_pairs %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~bullet_gt, nrow = 2)
+```
 
 ```{r}
-pairwise_model <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+pairwise_model_pink <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
                              (1|operator_gt) + 
                              (1|machine_gt) + 
                              (1|operator_gt:bullet_gt) + 
                              (1|operator_gt:machine_gt) + 
                              (1|bullet_gt:machine_gt), 
                            data = pink_pairs)
-summary(pairwise_model)
+summary(pairwise_model_pink)
 
 pairwise_model_l1 <- lmer(rfscore ~ (1|bullet_gt) + 
                             (1|operator_gt) + 
@@ -136,6 +133,89 @@ summary(pairwise_model_l2)
 ```
 
 
+
+
+## GREEN 
+
+
+
+
+```{r}
+green_l1 <- readRDS("../data/variability_scans/green_l1_rfscores.rda")
+green_l2 <- readRDS("../data/variability_scans/green_l2_rfscores.rda")
+green_l3 <- readRDS("../data/variability_scans/green_l3_rfscores.rda")
+green_l4 <- readRDS("../data/variability_scans/green_l4_rfscores.rda")
+green_l5 <- readRDS("../data/variability_scans/green_l5_rfscores.rda")
+green_l6 <- readRDS("../data/variability_scans/green_l6_rfscores.rda")
+
+green_ids <- read_csv("../data/variability_scans/green_gt.csv")
+green_ids_l1 <- green_ids %>% mutate(land1 = scan_id, unique_id_l1 = unique_id) %>% select(land1, unique_id_l1)
+green_ids_l2 <- green_ids %>% mutate(land2 = scan_id, unique_id_l2 = unique_id) %>% select(land2, unique_id_l2)
+green_pairs <- rbind(green_l1, green_l2, green_l3, green_l4, green_l5, green_l6)
+green_pairs <- full_join(green_pairs, green_ids_l1)
+green_pairs <- full_join(green_pairs, green_ids_l2)
+```
+
+
+```{r}
+green_pairs <- green_pairs %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+green_pairs <- green_pairs %>%
+  mutate(operator_gt = ifelse(operator_S1 == operator_S2, "Same Operator", "Different Operators"), 
+         round_gt = ifelse(round_S1 == round_S2, "Same Round", "Different Rounds"), 
+         bullet_gt = ifelse(bullet_S1 == bullet_S2, "Same Bullet", "Different Bullets"),
+         machine_gt = ifelse(machine_S1 == machine_S2, "Same Machine", "Different Machines"))
+```
+
+```{r}
+green_pairs %>% ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_l1)), alpha = 0.6) + 
+  theme_bw() + 
+  facet_wrap(~bullet_gt, nrow = 2)
+```
+
+
+
+
+```{r}
+pairwise_model_green <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+                             (1|operator_gt) + 
+                             (1|machine_gt) + 
+                             (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                           data = green_pairs)
+summary(pairwise_model_green)
+
+pairwise_model_l1 <- lmer(rfscore ~ (1|bullet_gt) + 
+                            (1|operator_gt) + 
+                            (1|machine_gt) + 
+                            (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                          data = green_pairs %>% filter(unique_id_l1 == "BL P-1"))
+
+summary(pairwise_model_l1)
+
+pairwise_model_l2 <- lmer(rfscore ~ (1|bullet_gt) + 
+                            (1|operator_gt) + 
+                            (1|machine_gt) + 
+                            (1|operator_gt:bullet_gt) + 
+                             (1|operator_gt:machine_gt) + 
+                             (1|bullet_gt:machine_gt), 
+                          data = green_pairs %>% filter(unique_id_l1 == "BL P-2"))
+
+summary(pairwise_model_l2)
+```
+
+
 # Linear models??
 ```{r}
 pink_lm <- lm(rfscore~ unique_id_l1 + bullet_gt + machine_gt + operator_gt + bullet_gt:machine_gt + bullet_gt:operator_gt + operator_gt:machine_gt, data = pink_pairs)
@@ -146,4 +226,32 @@ summary(pink_lm)
 orange_lm <- lm(rfscore~ unique_id_l1 + bullet_gt + machine_gt + operator_gt + bullet_gt:machine_gt + bullet_gt:operator_gt + operator_gt:machine_gt, data = orange_pairs)
 anova(orange_lm)
 summary(orange_lm)
+```
+
+
+
+```{r}
+orange_pairs$barrel <- c("Hamby")
+pink_pairs$barrel <- c("Houston")
+green_pairs$barrel <- c("CSAFE Persistence")
+
+all_pairs <- rbind(orange_pairs, pink_pairs, green_pairs)
+
+all_pairs %>% 
+  group_by(unique_id_l1) %>%
+  mutate(rfscore_diff = rfscore - mean(rfscore, na.rm = T)) %>%
+  ungroup() %>%
+  filter(unique_id_l1 != "BL O-6") %>%
+  ggplot() + geom_histogram(aes(x = rfscore_diff, fill = barrel), alpha = 0.7, position = "identity") + 
+  #facet_wrap(~barrel, nrow = 3) + 
+  theme_bw() + 
+  xlim(c(-1,1))
+
+all_pairs %>% 
+  filter(unique_id_l1 != "BL O-6") %>%
+  ggplot() + geom_histogram(aes(x = rfscore, fill = barrel), alpha = 0.7) + 
+  #facet_wrap(~barrel, nrow = 3) + 
+  theme_bw() + 
+  labs(x = "Similarity Score", y = "") + 
+  scale_fill_discrete(name = "")
 ```
