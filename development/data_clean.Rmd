@@ -10,6 +10,7 @@ library(tidyverse)
 library(bulletxtrctr)
 library(x3ptools)
 library(gridExtra)
+library(zoo)
 ```
 
 Define any functions we'll use later: 
@@ -34,86 +35,93 @@ ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
 Read in the data, and extract Operator, Barrel, Bullet, and Land.  
 
 ```{r}
-filenames <- list.files("/media/Raven/Variability/", pattern = "*.x3p", full.names = T, recursive = T) ## should be 1998 as of 5/21/19
+filenames <- list.files("/media/Raven/Variability/", pattern = "*.x3p", full.names = T, recursive = T) ## should be 2328 as of 8/8/19 - last x3ps exported by Curtis
 
 filenames_green <- filenames[which(str_detect(filenames, "Barrel Green") == T)] 
 filenames_orange <- filenames[which(str_detect(filenames, "Barrel Orange") == T)]
 filenames_pink <- filenames[which(str_detect(filenames, "Barrel Pink") == T)]
+head(crosscuts)
 ```
 
 
 ## BARREL ORANGE
 
 ```{r}
-variability_scans_orange <- data.frame(source = filenames_orange)
+scans_orange <- data.frame(source = filenames_orange)
 
-variability_scans_orange <- variability_scans_orange %>%
+scans_orange <- scans_orange %>%
   mutate(operator = purrr::map_chr(as.character(source), .f = function(filename){
     strsplit(strsplit(filename, "//")[[1]][2], "/")[[1]][1]
   }),
   round = purrr::map_chr(as.character(source), .f = function(filename){
      str_trim(strsplit(filename, "-")[[1]][2])
-     #strsplit(strsplit(filename, "//")[[1]][2], "/")[[1]][2]
   }), 
   machine = purrr::map_chr(as.character(source), .f = function(filename){
     str_trim(strsplit(filename, "-")[[1]][6])
   }), 
   barrel = purrr::map_chr(as.character(source), .f = function(filename){
     str_trim(strsplit(filename, "-")[[1]][3])
-    #strsplit(strsplit(filename, "//")[[1]][2], "/")[[1]][4]
   }), 
   bullet = purrr::map_chr(as.character(source), .f = function(filename){
     str_trim(strsplit(filename, "-")[[1]][4])
-    #strsplit(strsplit(filename, "//")[[1]][2], "/")[[1]][5]
   }), 
   land = purrr::map_chr(as.character(source), .f = function(filename){
     str_trim(strsplit(filename, "-")[[1]][5])
-    #cut_file <- strsplit(filename, "//")[[1]][2]
-    #str_sub(cut_file, start = str_locate(cut_file, "Land ")[1], end = str_locate(cut_file, "Land ")[2]+1)
   }))
 
-orange_rounds123 <- variability_scans_orange %>% filter(round != "Round 4", round != "Round 5")
-head(orange_rounds123)
-
-orange_rounds123 <- orange_rounds123 %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+scans_orange <- scans_orange %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
   x3ptools::read_x3p(filename)
 }))
 
-#saveRDS(orange_rounds123, "../data/variability_scans/orange_rounds123.rda")
 ```
 
 
 
 ```{r}
-orange_rounds123 <- orange_rounds123 %>% mutate(
+scans_orange <- scans_orange %>% mutate(
   x3p = x3p %>% purrr::map(.f = x3p_m_to_mum)
 )
 
-orange_rounds123 <- orange_rounds123 %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
+scans_orange <- scans_orange %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
   x3ptools::x3p_to_df(x3p)
 }))
 ```
 
 ```{r}
+## Figure out if there are any crosscuts that are going to be an issue.
+## Mya's "Barrel Orange, Round 2, Bullet 1, Land 5, Sneox 2" gives the error "crosscut data must have > 0 rows." Within the "full data", this is scan 659.
 
-## Note: One of Mya's scans, Barrel Orange, Round 2, Bullet 1, Land 5, Sneox 2, that functions can't seem to find crosscut data for - even though image_x3p shows a relatively clean. This is scan 491 within orange_rounds123, so we will remove this for now. 
-orange_crosscuts <- orange_rounds123[-491,] %>%
+## this is #167 in just "Orange, Round 2"
+
+orange_crosscuts <- scans_orange[-659,] %>%
   mutate(
     crosscut = purrr::map_dbl(x3p, .f = x3p_crosscut_optimize)
   )
 
-mya_no_cc <- orange_rounds123[491,] %>%
+mya_no_cc <- scans_orange[659,] %>%
   mutate(crosscut = 200)
 
 orange_crosscuts <- rbind(orange_crosscuts, mya_no_cc)
 orange_crosscuts <- orange_crosscuts %>% mutate(crosscut = ifelse(is.na(crosscut), median(crosscut, na.rm = T), crosscut))
+
+orange_crosscuts <- orange_crosscuts %>% select(-x3p)
+
+orange_crosscuts_half <- orange_crosscuts[1:400,] %>% mutate(
+  ccdata = purrr::map2(.x = ccdata, .y = crosscut, 
+                       .f = ccdata_ten_crosscut)
+)
+
+orange_crosscuts_half2 <- orange_crosscuts[401:780,] %>% mutate(
+  ccdata = purrr::map2(.x = ccdata, .y = crosscut, 
+                       .f = ccdata_ten_crosscut)
+)
 
 orange_crosscuts <- orange_crosscuts %>% mutate(
   ccdata = purrr::map2(.x = ccdata, .y = crosscut, 
                        .f = ccdata_ten_crosscut)
 )
 
-orange_crosscuts <- orange_crosscuts %>% select(-x3p)
+
 #head(orange_crosscuts)
 
 orange_crosscuts <- orange_crosscuts %>% mutate(
@@ -121,7 +129,7 @@ orange_crosscuts <- orange_crosscuts %>% mutate(
     ccdata %>% group_by(x) %>% summarise(y = mean(y, na.rm = T), value = mean(value, na.rm = T))
   })
 )
-#saveRDS(orange_crosscuts, "../data/variability_scans/orange_123_cc.rda")
+#saveRDS(orange_crosscuts, "../data/variability_scans/orange_cc.rda")
 ```
 
 
@@ -129,9 +137,9 @@ orange_crosscuts <- orange_crosscuts %>% mutate(
 ## BARREL GREEN  
 
 ```{r}
-variability_scans_green <- data.frame(source = filenames_green)
+scans_green <- data.frame(source = filenames_green)
 
-variability_scans_green <- variability_scans_green %>%
+scans_green <- scans_green %>%
   mutate(operator = purrr::map_chr(as.character(source), .f = function(filename){
     strsplit(strsplit(filename, "//")[[1]][2], "/")[[1]][1]
   }),
@@ -155,6 +163,13 @@ variability_scans_green <- variability_scans_green %>%
     #cut_file <- strsplit(filename, "//")[[1]][2]
     #str_sub(cut_file, start = str_locate(cut_file, "Land ")[1], end = str_locate(cut_file, "Land ")[2]+1)
   }))
+
+
+# check to see if we have everything we want: 
+scans_green %>% group_by(operator, round, machine, bullet) %>% summarise(n = n())
+scans_green <- scans_green %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
+  x3ptools::read_x3p(filename)
+}))
 
 #variability_scans_green
 green_rounds123 <- variability_scans_green %>% filter(round != "Round 4", round != "Round 5")

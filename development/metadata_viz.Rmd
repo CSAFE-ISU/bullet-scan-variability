@@ -1,0 +1,76 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+orange_meta <- readRDS("../data/variability_scans/orange_metadata.rda")
+green_meta <- readRDS("../data/variability_scans/green_metadata.rda")
+pink_meta <- readRDS("../data/variability_scans/pink_metadata.rda")
+scan_meta <- rbind(orange_meta, green_meta, pink_meta)
+operators <- read_csv("../data/variability_scans/operators_blind.csv")
+scan_meta <- left_join(scan_meta, operators)
+
+scan_meta %>%
+  mutate(date_time = paste0(date, " ", time),
+         date_time = lubridate::ymd_hms(date_time), 
+         date = lubridate::ymd(date), 
+         time = lubridate::hms(time)) %>%
+  group_by(date, round, operator_code) %>%
+  summarise(n_scans = n()) %>%
+  ggplot() + 
+  geom_jitter(aes(x = date, y = round, color = factor(operator_code), size = n_scans)) + 
+  theme_bw() + 
+  facet_wrap(~operator_code, nrow = 5) + 
+  labs(x = "Date", y = "Round Number") + 
+  scale_size_continuous(name = "Number of Scans") + 
+  scale_color_discrete(name = "Operator")
+
+scan_meta %>%
+  mutate(date_time = paste0(date, " ", time),
+         date_time = lubridate::ymd_hms(date_time), 
+         date = lubridate::ymd(date), 
+         time = lubridate::hms(time)) %>%
+  group_by(date, round, operator_code) %>%
+  summarise(n_scans = n()) %>%
+  ggplot() + 
+  geom_jitter(aes(x = date, y = operator_code, color = factor(operator_code), size = n_scans)) + 
+  theme_bw() + 
+  facet_wrap(~round, nrow = 5) + 
+  labs(x = "Date", y = "Operator") + 
+  scale_size_continuous(name = "Number of Scans") + 
+  scale_color_discrete(name = "Operator")
+```
+
+
+```{r}
+scan_meta %>%
+  mutate(date_time = paste0(date, " ", time),
+         date_time = lubridate::ymd_hms(date_time), 
+         date = lubridate::ymd(date), 
+         time = lubridate::hms(time)) %>%
+  group_by(date, round, operator_code, barrel) %>%
+  summarise(n_scans = n()) %>%
+  ggplot() + 
+  geom_jitter(aes(x = date, y = round, color = factor(barrel), size = n_scans), alpha = 0.7) + 
+  theme_bw() + 
+  facet_wrap(~operator_code, nrow = 5) + 
+  scale_color_manual(name = "Barrel", breaks = c("Barrel Green", "Barrel Orange", "Barrel Pink"), values = c("forestgreen", "darkorange1", "hotpink3")) + 
+  scale_size_continuous(name = "Number of Scans") + 
+  labs(x = "Date", y = "Round") 
+```
+
+
+```{r}
+scan_meta %>%
+    mutate(date_time = paste0(date, " ", time),
+           date_time = lubridate::ymd_hms(date_time), 
+           date = lubridate::ymd(date), 
+           time = hms::as.hms(time), 
+           hour = lubridate::hour(time)) %>%
+  ggplot() + 
+  geom_density(aes(x = time, fill = factor(operator_code)), alpha = 0.6) +
+  theme_bw() + 
+  labs(x = "Time of Day") + 
+  scale_fill_discrete(name = "Operator")
+```

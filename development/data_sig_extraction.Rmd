@@ -19,7 +19,14 @@ library(randomForest)
 Crosscut data already extracted  
 
 ```{r}
-orange_crosscuts <- readRDS("../data/variability_scans/orange_123_cc.rda")
+orange_r1 <- readRDS("../data/variability_scans/Orange_round1_cc.rda")
+orange_r2 <- readRDS("../data/variability_scans/Orange_round2_cc.rda")
+orange_r3 <- readRDS("../data/variability_scans/Orange_round3_cc.rda")
+orange_r4 <- readRDS("../data/variability_scans/Orange_round4_cc.rda")
+orange_r5 <- readRDS("../data/variability_scans/Orange_round5_cc.rda")
+orange_all <- rbind(orange_r1, orange_r2, orange_r3, orange_r4, orange_r5)
+#saveRDS(orange_all, "../data/variability_scans/Orange_all_cc.rda")
+orange_crosscuts <- readRDS("../data/variability_scans/Orange_all_cc.rda")
 
 orange_crosscuts <- orange_crosscuts %>% 
   mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
@@ -27,7 +34,7 @@ orange_crosscuts <- orange_crosscuts %>%
 
 orange_crosscuts <- orange_crosscuts %>% mutate(
   grooves = ccdata %>% 
-    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+    purrr::map(.f = cc_locate_grooves, method = "lassofull", 
                adjust = 10, return_plot = TRUE)
 )
 ```
@@ -71,7 +78,7 @@ shinyApp(
                         choices=1:length(grooves))
     })
     observeEvent(input$save,{
-      saveRDS(grooves, file="../data/variability_scans/orange_123_grooves.rda")
+      saveRDS(grooves, file="../data/variability_scans/Orange_all_grooves.rda")
       cat("groove data saved\n")
     })
     
@@ -104,12 +111,12 @@ shinyApp(
   options = list(height = 500)
 )
 #}
-#saveRDS(grooves, file="../data/variability_scans/orange_123_grooves.rda")
+#saveRDS(grooves, file="../data/variability_scans/Orange_all_grooves.rda")
 
 ```
 
 ```{r}
-grooves <- readRDS("../data/variability_scans/orange_123_grooves.rda")
+grooves <- readRDS("../data/variability_scans/Orange_all_grooves.rda")
 orange_crosscuts$grooves <- grooves
 
 
@@ -123,7 +130,7 @@ orange_crosscuts <- orange_crosscuts %>% mutate(
 )
 
 orange_sigs <- orange_crosscuts %>% select(-ccdata)
-saveRDS(orange_sigs, "../data/variability_scans/orange_123_sigs.rda")
+saveRDS(orange_sigs, "../data/variability_scans/Orange_all_sigs.rda")
 ```
 
 
@@ -134,7 +141,14 @@ saveRDS(orange_sigs, "../data/variability_scans/orange_123_sigs.rda")
 Crosscut data already extracted  
 
 ```{r}
-green_crosscuts <- readRDS("../data/variability_scans/green_123_cc_full.rda")
+green_r1 <- readRDS("../data/variability_scans/Green_round1_cc.rda")
+green_r2 <- readRDS("../data/variability_scans/Green_round2_cc.rda")
+green_r3 <- readRDS("../data/variability_scans/Green_round3_cc.rda")
+green_r4 <- readRDS("../data/variability_scans/Green_round4_cc.rda")
+green_r5 <- readRDS("../data/variability_scans/Green_round5_cc.rda")
+green_all <- rbind(green_r1, green_r2, green_r3, green_r4, green_r5)
+#saveRDS(green_all, "../data/variability_scans/Green_all_cc.rda")
+green_crosscuts <- readRDS("../data/variability_scans/Green_all_cc.rda")
 
 green_crosscuts <- green_crosscuts %>% 
   mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
@@ -187,7 +201,7 @@ shinyApp(
                         choices=1:length(grooves))
     })
     observeEvent(input$save,{
-      saveRDS(grooves, file="../data/variability_scans/green_123_grooves.rda")
+      saveRDS(grooves, file="../data/variability_scans/Green_all_grooves.rda")
       cat("groove data saved\n")
     })
     
@@ -220,14 +234,14 @@ shinyApp(
   options = list(height = 500)
 )
 #}
-saveRDS(grooves, file="../data/variability_scans/green_123_grooves.rda")
+#saveRDS(grooves, file="../data/variability_scans/Green_all_grooves.rda")
 
 ```
 
 
 
 ```{r}
-green_grooves <- readRDS("../data/variability_scans/green_123_grooves.rda")
+green_grooves <- readRDS("../data/variability_scans/Green_all_grooves.rda")
 green_crosscuts$grooves <- green_grooves
 
 
@@ -241,7 +255,7 @@ green_crosscuts <- green_crosscuts %>% mutate(
 )
 
 green_sigs <- green_crosscuts %>% select(-ccdata)
-saveRDS(green_sigs, "../data/variability_scans/green_123_sigs.rda")
+saveRDS(green_sigs, "../data/variability_scans/Green_all_sigs.rda")
 ```
 
 
@@ -251,7 +265,14 @@ saveRDS(green_sigs, "../data/variability_scans/green_123_sigs.rda")
 Crosscut data already extracted  
 
 ```{r}
-pink_crosscuts <- readRDS("../data/variability_scans/pink_123_cc.rda")
+pink_r1 <- readRDS("../data/variability_scans/Pink_round1_cc.rda")
+pink_r2 <- readRDS("../data/variability_scans/Pink_round2_cc.rda")
+pink_r3 <- readRDS("../data/variability_scans/Pink_round3_cc.rda")
+pink_r4 <- readRDS("../data/variability_scans/Pink_round4_cc.rda")
+pink_r5 <- readRDS("../data/variability_scans/Pink_round5_cc.rda")
+pink_all <- rbind(pink_r1, pink_r2, pink_r3, pink_r4, pink_r5)
+saveRDS(pink_all, "../data/variability_scans/Pink_all_cc.rda")
+pink_crosscuts <- readRDS("../data/variability_scans/Pink_all_cc.rda")
 
 pink_crosscuts <- pink_crosscuts %>% 
   mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
@@ -259,7 +280,7 @@ pink_crosscuts <- pink_crosscuts %>%
 
 pink_crosscuts <- pink_crosscuts %>% mutate(
   grooves = ccdata %>% 
-    purrr::map(.f = cc_locate_grooves, method = "lassobasic", 
+    purrr::map(.f = cc_locate_grooves, method = "lassofull", 
                adjust = 10, return_plot = TRUE)
 )
 ```
@@ -303,7 +324,7 @@ shinyApp(
                         choices=1:length(grooves))
     })
     observeEvent(input$save,{
-      saveRDS(grooves, file="../data/variability_scans/pink_123_grooves.rda")
+      saveRDS(grooves, file="../data/variability_scans/Pink_all_grooves.rda")
       cat("groove data saved\n")
     })
     
@@ -336,12 +357,12 @@ shinyApp(
   options = list(height = 500)
 )
 #}
-saveRDS(grooves, file="../data/variability_scans/pink_123_grooves.rda")
+saveRDS(grooves, file="../data/variability_scans/Pink_all_grooves.rda")
 
 ```
 
 ```{r}
-pink_grooves <- readRDS("../data/variability_scans/pink_123_grooves.rda")
+pink_grooves <- readRDS("../data/variability_scans/Pink_all_grooves.rda")
 pink_crosscuts$grooves <- pink_grooves
 
 
@@ -355,7 +376,7 @@ pink_crosscuts <- pink_crosscuts %>% mutate(
 )
 
 pink_sigs <- pink_crosscuts %>% select(-ccdata)
-saveRDS(pink_sigs, "../data/variability_scans/pink_123_sigs.rda")
+saveRDS(pink_sigs, "../data/variability_scans/Pink_all_sigs.rda")
 ```
 
 
