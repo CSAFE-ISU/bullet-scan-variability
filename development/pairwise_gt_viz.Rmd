@@ -8,11 +8,12 @@ output: html_document
 # ORANGE 
 
 ```{r}
-orange_sigs <- readRDS("../data/variability_scans/orange_123_sigs.rda")
+orange_sigs <- readRDS("../data/variability_scans/Orange_all_sigs.rda")
 
 orange_lands <- data.frame(scan_id = unique(orange_sigs$scan_id))
 
 orange_lands <- orange_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
 #write_csv(orange_lands, "../data/variability_scans/orange_gt.csv")
 ```
 
@@ -345,11 +346,12 @@ rfscores_orange_b3 %>%
 # GREEN 
 
 ```{r}
-green_sigs <- readRDS("../data/variability_scans/green_123_sigs.rda")
+green_sigs <- readRDS("../data/variability_scans/Green_all_sigs.rda")
 
 green_lands <- data.frame(scan_id = unique(green_sigs$scan_id))
 
 green_lands <- green_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
 #write_csv(green_lands, "../data/variability_scans/green_gt.csv")
 ```
 

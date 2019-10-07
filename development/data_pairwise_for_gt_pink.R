@@ -4,7 +4,7 @@ library(x3ptools)
 library(gridExtra)
 library(randomForest)
 
-pink_sigs <- readRDS("data/variability_scans/pink_123_sigs.rda")
+pink_sigs <- readRDS("data/variability_scans/Pink_all_sigs.rda")
 
 # COMPARE BULLETS 1, 2, 3 FIRST to get "reference"
 pink_bullets_123 <- pink_sigs %>% filter(operator == "Connor", round == "Round 1", machine == "Sneox1") 
