@@ -13,7 +13,7 @@ library(bulletxtrctr)
 
 First, we want to add our "unique_id" for each land to the signature data, so we can group them by that and align the lands. 
 ```{r}
-pink_sigs <- readRDS("../data/variability_scans/pink_123_sigs.rda")
+pink_sigs <- readRDS("../data/variability_scans/Pink_all_sigs.rda")
 pink_sigs <- pink_sigs %>% 
   select(scan_id, sigs)
 head(pink_sigs)
@@ -37,13 +37,13 @@ bl_p1 <- bl_p1 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
   lands
 }))
 
-blp1_long <- bl_p1 %>% unnest(sigs_aligned)
+#blp1_long <- bl_p1 %>% unnest(sigs_aligned)
 
-blp1_long %>% 
-  ggplot() + 
-  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
-  geom_line(aes(x = x_aligned, y = sig1)) + 
-  theme_bw() 
+#blp1_long %>% 
+#  ggplot() + 
+#  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+#  geom_line(aes(x = x_aligned, y = sig1)) + 
+#  theme_bw() 
 
 bl_p2 <- pink_sigs %>% filter(unique_id == "BL P-2")
 bl_p2 <- bl_p2 %>% mutate(sigs_aligned = purrr::map(sigs, .f = function(row){
