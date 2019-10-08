@@ -687,11 +687,12 @@ rfscores_green_b3 %>%
 # PINK 
 
 ```{r}
-pink_sigs <- readRDS("../data/variability_scans/pink_123_sigs.rda")
+pink_sigs <- readRDS("../data/variability_scans/Pink_all_sigs.rda")
 
 pink_lands <- data.frame(scan_id = unique(pink_sigs$scan_id))
 
 pink_lands <- pink_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
 #write_csv(pink_lands, "../data/variability_scans/pink_gt.csv")
 ```
 
