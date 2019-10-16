@@ -1,0 +1,113 @@
+---
+title: "pipeline exploration"
+author: "Kiegan Rice"
+output: html_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(tidyverse)
+library(bulletxtrctr)
+library(x3ptools)
+library(drake)
+library(grooveFinder)
+```
+
+I want to test out the `drake` package and see if it can possibly integrate with the bullet pipeline.  
+
+To do this, I am first going to test out `drake`'s `drake_plan` function, which lets you make a pipeline plan. I will test this first on a small set of signatures, and I will look at two steps: 
+
+1. Groove ID;
+2. Signature extraction.
+
+
+First, let's read in some Barrel Orange data and grab a small subset of ccdata. 
+```{r}
+orange_ccdata <- readRDS("../../data/variability_scans/Orange_all_cc.rda")
+orange_gt <- read_csv("../../data/variability_scans/orange_gt.csv")
+
+orange_ccdata <- left_join(orange_ccdata, orange_gt)
+orange_ccdata <- orange_ccdata %>% filter(unique_id == "BL O-1", bullet == "Bullet 1", operator == "Connor")
+```
+
+Let's make a `drake_plan` to take signatures, identify grooves, and extract signatures.
+
+```{r}
+plan <- drake_plan(
+  data = orange_ccdata,
+  data_grooves = data %>% mutate(grooves = purrr::map(ccdata, .f = cc_locate_grooves, method = "lassofull", 
+               adjust = 10, return_plot = TRUE)),
+  data_sigs = data_grooves %>% mutate(sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    }))
+)
+
+config <- drake_config(plan)
+vis_drake_graph(config)
+
+make(plan)
+```
+
+
+```{r}
+plan2 <- drake_plan(
+  data = orange_ccdata,
+  sig_data = data %>% 
+    mutate(grooves = purrr::map(ccdata, .f = cc_locate_grooves, 
+                                method = "lassofull", 
+                                adjust = 10, return_plot = TRUE),
+           sigs = purrr::map2(.x = ccdata, .y = grooves, 
+                              .f = function(x, y) {
+                                cc_get_signature(ccdata = x, 
+                                                 grooves = y, 
+                                                 span1 = 0.75, 
+                                                 span2 = 0.03)})
+    )
+)
+
+config2<- drake_config(plan2)
+vis_drake_graph(config2)
+
+make(plan2)
+```
+
+
+
+
+Let's try making a function that does what we want to our data. 
+
+
+```{r}
+sig_extract <- function(data, groove_method = groove_methods, span1 = span1, span2 = span2){
+  sig_data <- data %>% 
+    mutate(grooves = purrr::map(ccdata, .f = cc_locate_grooves, 
+                                method = groove_method, 
+                                adjust = 10, return_plot = TRUE),
+           sigs = purrr::map2(.x = ccdata, .y = grooves, 
+                              .f = function(x, y) {
+                                cc_get_signature(ccdata = x, 
+                                                 grooves = y, 
+                                                 span1 = span1, 
+                                                 span2 = span2)})
+    )
+  return(sig_data)
+}
+```
+
+```{r}
+plan3 <- drake_plan(
+  data = orange_ccdata,
+  sig_data = target(
+    sig_extract(data, groove_method = groove_method, span1 = span1, span2 = span2),
+    transform = cross(groove_method = c("lassofull", "rollapply"), span1 = c(0.5, 0.75, 1), span2 = c(0.02, 0.03, 0.04))
+)
+)
+
+config3<- drake_config(plan3)
+vis_drake_graph(config3)
+
+make(plan3)
+```
+
