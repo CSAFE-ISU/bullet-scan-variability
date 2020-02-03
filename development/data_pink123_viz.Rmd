@@ -190,6 +190,27 @@ bp_long %>%
 ```
 
 
+```{r}
+
+bp_long %>%
+  filter(unique_id == "BL P-1") %>%
+  group_by(x_aligned, bullet) %>%
+  mutate(mean_bullet = mean(sig2, na.rm = T), resid_bullet = sig2 - mean_bullet) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = resid_bullet, group = scan_id, color = factor(round)), alpha = 0.7) + 
+  geom_hline(yintercept = 0) + 
+  #geom_line(aes(x = x_aligned, y = sig1), alpha = 0.7) + 
+  theme_bw() + 
+  facet_grid(operator_code~bullet) + 
+  labs(title = "Barrel Pink Land 1")
+
+
+```
+
+
+
+
 
 ```{r}
 bp_long %>%
@@ -455,4 +476,45 @@ bp_long %>%
   theme_bw() + 
   #facet_wrap(~bullet, nrow = 3) + 
   labs(title = "Barrel Pink Land 6", x = "Relative X Location", y = "Signature Height")
+```
+
+
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+
+sigs_long_plot <- bp_long %>%
+  filter(unique_id == "BL P-5") %>%
+  group_by(x_aligned) %>%
+  mutate(mean_all = mean(sig2, na.rm = T), resid_all = sig2 - mean_all) %>%
+  ungroup() %>%
+  group_by(x_aligned, bullet) %>%
+  mutate(mean_bullet = mean(sig2, na.rm = T), resid_bullet = sig2 - mean_bullet) %>%
+  ungroup() %>%
+  group_by(x_aligned, bullet, operator) %>%
+  mutate(mean_operator_nest = mean(sig2, na.rm = T), resid_operator_nest = sig2 - mean_operator_nest) %>%
+  ungroup() %>%
+  group_by(x_aligned, bullet, operator, machine) %>%
+  mutate(mean_machine_nest = mean(sig2, na.rm = T), resid_machine_nest = sig2 - mean_machine_nest) %>%
+  ungroup() 
+
+
+sigs_long_plot %>%
+  group_by(x_aligned, bullet) %>%
+  mutate(value_min = min(sig2, na.rm = T), 
+            value_max = max(sig2, na.rm = T),
+          max_bullet = max(resid_bullet, na.rm = T), 
+         min_bullet = min(resid_bullet, na.rm = T)) %>% 
+  ungroup() %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = resid_bullet, group = scan_id, color = factor(bullet)), alpha = 0.4) + 
+  geom_line(aes(x = x_aligned, y = sig2 + 15 , group = scan_id, color = factor(bullet)), alpha = 0.6) + 
+  geom_hline(yintercept = 0) + 
+  #geom_line(aes(x = x_aligned, y = mean_bullet, group = bullet), alpha = 0.8) + 
+  theme_bw() + 
+  labs(x = "X Location", y = "Signature height", title = "Residuals: Mean by bullet of Barrel Pink-Land 5") + 
+  scale_color_manual(name = "Bullet", values = cbPalette[c(2,3,7)]) + 
+  scale_fill_manual(name = "Bullet", values = cbPalette[c(2,3,7)]) + 
+  theme(legend.position = "bottom") + 
+  facet_wrap(~bullet, nrow =3)
 ```

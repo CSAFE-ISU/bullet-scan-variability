@@ -3,6 +3,7 @@ library(bulletxtrctr)
 library(x3ptools)
 library(zoo)
 
+
 args <- commandArgs(TRUE)
 barrel_id <- args[1] # should be "Orange", "Green", or "Pink"
 round_id <- args[2] # should be 1, 2, 3, 4 or 5
@@ -105,4 +106,4 @@ crosscuts <- crosscuts %>% mutate(
   })
 )
 
-saveRDS(crosscuts, file = paste0("data/variability_scans/", data_filename))
+saveRDS(crosscuts, file = paste0("data/variability_scans/", data_filename)) 

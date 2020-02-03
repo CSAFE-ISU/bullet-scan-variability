@@ -1,0 +1,236 @@
+---
+title: "Untitled"
+author: "Kiegan Rice"
+output: html_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(tidyverse)
+library(lme4)
+library(gridExtra)
+library(zoo)
+library(knitr)
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+```
+
+
+```{r}
+subsample_sigs <- function(sig_aligned_data, n_phases, window_size){
+  x_vals <- data.frame(x_aligned = unique(sig_aligned_data[,"x_aligned"]), phase_id = NA)
+  jump <- window_size/n_phases
+  sample_size <- floor(nrow(x_vals)/window_size)
+  #phase_ids <- list(length = n_phases)
+  for(i in 1:n_phases){
+    phase_ids <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    #phase_ids[[i]] <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    x_vals <- x_vals %>% mutate(phase_id = ifelse(x_aligned %in% phase_ids, i, phase_id))
+  }
+
+  
+  dat_phased <- left_join(sig_aligned_data, x_vals)
+  dat_nest <- dat_phased %>%
+    filter(!is.na(phase_id)) %>%
+    group_by(unique_id, phase_id) %>%
+    nest() %>%
+    mutate(models = lapply(data, function(df) lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = df)), 
+         sigmas = lapply(models, function(model) as.data.frame(VarCorr(model))[,c("grp", "sdcor")])) %>%
+    select(unique_id, phase_id, sigmas)
+  
+  
+  return(dat_nest)
+}
+```
+
+```{r}
+orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
+
+orange_sig_long <- orange_sig_data %>% 
+  select(-sigs) %>%
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+
+sampling_df <- data.frame(window_size = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_sig_long, n_phases = 5, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+sampling_df %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  scale_color_manual(name = "Phase", values = cbPalette[c(2,3,7,6,4)]) + 
+  facet_grid(grp~unique_id) + 
+  theme_bw()
+
+
+sampling_df %>%
+  group_by(unique_id, grp, window_size) %>%
+  mutate(min_sd = min(sdcor), 
+         max_sd = max(sdcor), 
+         mean_sd = mean(sdcor)) %>%
+  ungroup() %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  #geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  geom_line(aes(x = window_size, y = mean_sd)) + 
+  geom_ribbon(aes(x = window_size, ymin = min_sd, ymax = max_sd), color = "grey", alpha = 0.6) +
+  #scale_color_manual(name = "Phase", values = cbPalette[c(2,3,7,6,4)]) + 
+  facet_grid(grp~unique_id) + 
+  theme_bw()
+
+```
+
+
+```{r}
+sampling_df %>%
+  group_by(grp) %>%
+  summarise(model = list(lm(sdcor~window_size))) %>%
+  mutate(coefs = model %>% purrr::map(.f = broom::tidy)) %>%
+  unnest(cols = coefs) %>%
+  filter(term == "window_size") %>%
+  arrange(grp) %>%
+  mutate(signif = ifelse(p.value < .05, "yes", "no"))
+
+sampling_df %>%
+  filter(window_size <= 60) %>%
+  group_by(grp) %>%
+  summarise(model = list(lm(sdcor~window_size))) %>%
+  mutate(coefs = model %>% purrr::map(.f = broom::tidy)) %>%
+  unnest(cols = coefs) %>%
+  filter(term == "window_size") %>%
+  arrange(grp) %>%
+  mutate(signif = ifelse(p.value < .05, "yes", "no"))
+```
+
+
+```{r}
+pink_sig_data <- readRDS("../data/variability_scans/pink_aligned_sigs.rda")
+
+pink_sig_long <- pink_sig_data %>% 
+  select(-sigs) %>%
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+
+sampling_df_pink <- data.frame(window_size = c(40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_sig_long, n_phases = 5, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+sampling_df_pink %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  scale_color_manual(name = "Phase", values = cbPalette[c(2,3,7,6,4)]) + 
+  facet_grid(grp~unique_id) + 
+  theme_bw()
+
+
+sampling_df_pink %>%
+  group_by(unique_id, grp, window_size) %>%
+  mutate(min_sd = min(sdcor), 
+         max_sd = max(sdcor), 
+         mean_sd = mean(sdcor)) %>%
+  ungroup() %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  #geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  geom_line(aes(x = window_size, y = mean_sd)) + 
+  geom_ribbon(aes(x = window_size, ymin = min_sd, ymax = max_sd), color = "grey", alpha = 0.6) +
+  #scale_color_manual(name = "Phase", values = cbPalette[c(2,3,7,6,4)]) + 
+  facet_grid(grp~unique_id) + 
+  theme_bw()
+
+```
+
+
+```{r}
+sampling_df_pink %>%
+  group_by(grp) %>%
+  summarise(model = list(lm(sdcor~window_size))) %>%
+  mutate(coefs = model %>% purrr::map(.f = broom::tidy)) %>%
+  unnest(cols = coefs) %>%
+  filter(term == "window_size") %>%
+  arrange(grp) %>%
+  mutate(signif = ifelse(p.value < .05, "yes", "no"))
+
+sampling_df_pink %>%
+  filter(window_size <= 90) %>%
+  group_by(grp) %>%
+  summarise(model = list(lm(sdcor~window_size))) %>%
+  mutate(coefs = model %>% purrr::map(.f = broom::tidy)) %>%
+  unnest(cols = coefs) %>%
+  filter(term == "window_size") %>%
+  arrange(grp) %>%
+  mutate(signif = ifelse(p.value < .05, "yes", "no"))
+```
+
+
+
+```{r}
+green_sig_data <- readRDS("../data/variability_scans/green_aligned_sigs.rda")
+
+green_sig_long <- green_sig_data %>% 
+  select(-sigs) %>%
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+
+sampling_df_green <- data.frame(window_size = c(40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = green_sig_long, n_phases = 5, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+sampling_df_green %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  scale_color_manual(name = "Phase", values = cbPalette[c(2,3,7,6,4)]) + 
+  facet_grid(grp~unique_id) + 
+  theme_bw()
+
+
+sampling_df_green %>%
+  group_by(unique_id, grp, window_size) %>%
+  mutate(min_sd = min(sdcor), 
+         max_sd = max(sdcor), 
+         mean_sd = mean(sdcor)) %>%
+  ungroup() %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  #geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  geom_ribbon(aes(x = window_size, ymin = min_sd, ymax = max_sd), color = "grey", alpha = 0.6) +
+  geom_line(aes(x = window_size, y = mean_sd)) + 
+  #scale_color_manual(name = "Phase", values = cbPalette[c(2,3,7,6,4)]) + 
+  facet_grid(grp~unique_id) + 
+  theme_bw()
+
+```
+
+```{r}
+sampling_df_green %>%
+  group_by(unique_id, grp) %>%
+  summarise(model = list(lm(sdcor~window_size))) %>%
+  mutate(coefs = model %>% purrr::map(.f = broom::tidy)) %>%
+  unnest(cols = coefs) %>%
+  filter(term == "window_size") %>%
+  arrange(grp) %>%
+  mutate(signif = ifelse(p.value < .05, "yes", "no"))
+
+sampling_df_green %>%
+  filter(window_size <= 90) %>%
+  group_by(unique_id, grp) %>%
+  summarise(model = list(lm(sdcor~window_size))) %>%
+  mutate(coefs = model %>% purrr::map(.f = broom::tidy)) %>%
+  unnest(cols = coefs) %>%
+  filter(term == "window_size") %>%
+  arrange(grp) %>%
+  mutate(signif = ifelse(p.value < .05, "yes", "no"))
+```
+
+

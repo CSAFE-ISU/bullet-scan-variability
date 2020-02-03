@@ -1,0 +1,103 @@
+---
+title: "Signatures - Resampling"
+author: "Kiegan Rice"
+date: "11/20/2019"
+output: html_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(tidyverse)
+library(lme4)
+library(gridExtra)
+library(zoo)
+library(knitr)
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbBulletPal <- c("#E69F00","#56B4E9","#D55E00","#0072B2","#009E73")
+```
+
+```{r}
+orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
+orange_sig_data <- orange_sig_data %>% 
+  mutate(sigs_aligned = purrr::map(sigs_aligned, .f = function(df){
+    n_x <- length(df$sig2)
+    df$sig2_shift <- c(df$sig2[2:n_x], NA)
+    df$sig2_diff1 <- df$sig2_shift - df$sig2
+    return(df)
+}))
+
+orange_sig_long <- orange_sig_data %>% 
+  select(-sigs) %>%
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+
+
+orange_sig_long %>%
+  #filter(unique_id == "BL O-1") %>%
+  filter(operator != "Allison", operator != "Mya", bullet == "Bullet 1") %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2_diff1, group = scan_id, color = unique_id), alpha = 0.7) + 
+  theme_bw()
+  #facet_wrap(~bullet, nrow = 3) + 
+  #scale_color_manual(values = cbBulletPal[1:6])
+```
+
+```{r}
+orange_sig_long_l1 <- orange_sig_long %>% filter(unique_id == "BL O-1", scan_id != "Barrel Orange-Land 4-Bullet 2-Mya-Sneox2-Round 3")
+chk_diffs <- which.max(abs(orange_sig_long_l1$sig2_diff1))
+orange_sig_long_l1[seq(chk_diffs - 5, chk_diffs + 5),]
+
+
+orange_sig_long %>%
+  filter(scan_id == "Barrel Orange-Land 1-Bullet 1-Allison-Sneox2-Round 3", x_aligned>2500) %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig1), color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2), color = "red") + 
+  geom_line(aes(x = x_aligned, y = sig2_diff1 + 20), color = "blue") + 
+  theme_bw()
+```
+
+
+
+
+## Differenced Signatures and CCF
+
+```{r}
+make_comparison_grid <- function(scan_ids, self_comparisons = T){
+  combos <- combn(scan_ids, 2) %>% t()
+  combos_df <- data.frame(land1 = combos[,1], land2 = combos[,2]) 
+  if(self_comparisons == T){
+    self_combos <- data.frame(land1 = scan_ids, land2 = scan_ids)
+    combos_df <- rbind(combos_df, self_combos) %>%
+      mutate(pairing_id = paste0(land1, "_", land2))
+  }
+  else(combos_df <- combos_df %>% 
+         mutate(pairing_id = paste0(land1, "_", land2)))
+  return(combos_df)
+}
+
+orange_comparisons <- make_comparison_grid(scan_ids = unique(orange_sig_data$scan_id))
+
+```
+
+```{r}
+
+orange_comparisons <- orange_comparisons %>% mutate(
+  aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
+    land1 <- orange_sig_data$sigs_aligned[orange_sig_data$scan_id == xx][[1]]
+    land2 <- orange_sig_data$sigs_aligned[orange_sig_data$scan_id == yy][[1]]
+    land1$bullet <- "first-land"
+    land2$bullet <- "second-land"
+    
+    sig_align(land1$sig2_diff1, land2$sig2_diff1)
+  }), 
+  ccf0 = aligned %>% 
+    purrr::map_dbl(.f = function(x) extract_feature_ccf(x$lands))
+  )
+
+```
+
+```{r}
+hamby44 <- readRDS("../../../grooves/data/hamby44/hamby44_eval.rda")
+```
+
+

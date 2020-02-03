@@ -1,0 +1,39 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(bulletxtrctr)
+library(x3ptools)
+library(tidyverse)
+library(grooveFinder)
+```
+
+```{r}
+#orange_sigs <- readRDS("../../data/variability_scans/Orange_all_sigs.rda")
+
+#ss_example_pair <- orange_sigs %>%
+#  filter(operator == "Connor", 
+#         bullet != "Bullet 3", 
+#         round == "Round 1", 
+#         machine == "Sneox1") 
+
+#saveRDS(ss_example_pair, "../../data/pipeline/ss_example_pair.rda")
+```
+
+```{r}
+sigs <- readRDS("../../data/pipeline/ss_example_pair.rda")
+```
+
+```{r}
+
+
+formals(bulletxtrctr::cc_locate_grooves)
+```
+
+
+
+
+
+
