@@ -1,14 +1,15 @@
 library(tidyverse)
 library(bulletxtrctr)
 library(x3ptools)
+library(gridExtra)
 library(zoo)
 
-
 args <- commandArgs(TRUE)
-barrel_id <- args[1] # should be "Orange", "Green", or "Pink"
+operator_id <- args[1] # should be an Operator first name
 round_id <- args[2] # should be 1, 2, 3, 4 or 5
 
-data_filename <- paste0(barrel_id, "_round", round_id, "_cc.rda")
+data_filename <- paste0(operator_id, "_round", round_id, "_cc.rda")
+round_id_full <- paste0("Round ", as.character(round_id))
 
 ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
   #x3pdat <- bulletxtrctr::check_x3p(x3p)
@@ -25,11 +26,8 @@ ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
   return(na.omit(x3p_df_fix))
 }
 
-
-round_id_full <- paste0("Round ", as.character(round_id))
-barrel_id_full <- paste0("Barrel ", barrel_id)
-
 filenames <- list.files("/media/Raven/Variability/", pattern = "*.x3p", full.names = T, recursive = T)
+
 scans <- data.frame(source = filenames)
 
 scans <- scans %>%
@@ -52,12 +50,11 @@ scans <- scans %>%
     str_trim(strsplit(filename, "-")[[1]][5])
   }))
 
-scans <- scans %>% filter(barrel == barrel_id_full,round == round_id_full)
+scans <- scans %>% filter(operator == operator_id, round == round_id_full)
 
 scans <- scans %>% mutate(x3p = purrr::map(as.character(source), .f = function(filename){
   x3ptools::read_x3p(filename)
 }))
-
 
 scans <- scans %>% mutate(sizeX = purrr::map_dbl(x3p, .f = function(x3p){
   as.numeric(x3p$matrix.info$MatrixDimension$SizeX[[1]][1])
@@ -72,10 +69,6 @@ time = purrr::map_chr(x3p, .f = function(x3p){
   strsplit(x3p$general.info$Date[[1]][1], "T")[[1]][2]
 }))
 
-
-#scans <- scans %>% mutate(
-#  x3p = x3p %>% purrr::map(.f = x3p_m_to_mum)
-#)
 
 scans <- scans %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
   x3ptools::x3p_to_df(x3p)
@@ -106,4 +99,6 @@ crosscuts <- crosscuts %>% mutate(
   })
 )
 
-saveRDS(crosscuts, file = paste0("data/variability_scans/", data_filename)) 
+saveRDS(crosscuts, file = paste0("data/variability_scans/", data_filename))
+
+
