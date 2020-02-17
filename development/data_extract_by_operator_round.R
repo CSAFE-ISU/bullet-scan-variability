@@ -70,6 +70,16 @@ time = purrr::map_chr(x3p, .f = function(x3p){
 }))
 
 
+scans <- scans %>% mutate(
+  x3p_increment_small = purrr::map_lgl(x3p, .f = function(x) x$header.info$incrementX == 0.000000645)
+)
+
+scans <- scans %>% mutate(
+  x3p = purrr::map2(.x = x3p, .y = x3p_increment_small, .f = function(x,y){
+    x3p <- if(y == T) {x3p_m_to_mum(x)} else{x}
+    return(x3p)
+  }))
+
 scans <- scans %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
   x3ptools::x3p_to_df(x3p)
 }))
@@ -78,9 +88,9 @@ scans <- scans %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
 crosscuts <- scans %>%
   mutate(
     crosscut_safe = purrr::map(x3p, .f = purrr::safely(x3p_crosscut_optimize)),
-    crosscut = purrr::map(crosscut_safe, "result"),
-    crosscut = purrr::map_dbl(crosscut, function(x) ifelse(is.null(x), 200, x))
-  )
+    crosscut = purrr::map_dbl(crosscut_safe, "result"))#,
+    #crosscut = purrr::map_dbl(crosscut, function(x) ifelse(is.null(x), 200, x))
+  #)
 
 
 crosscuts <- crosscuts %>% mutate(crosscut = ifelse(is.na(crosscut), median(crosscut, na.rm = T), crosscut))

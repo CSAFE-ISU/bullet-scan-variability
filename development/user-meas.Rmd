@@ -51,6 +51,7 @@ Scan = purrr::map_chr(as.character(source), .f = function(source){
   ifelse(str_detect(source, "Scan") == T, strsplit(source, " - ")[[1]][5], "Scan 1")
 }))
 
+
 #head(user_meas)
 ```
 

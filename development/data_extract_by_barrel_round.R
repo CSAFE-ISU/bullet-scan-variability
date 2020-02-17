@@ -8,7 +8,7 @@ args <- commandArgs(TRUE)
 barrel_id <- args[1] # should be "Orange", "Green", or "Pink"
 round_id <- args[2] # should be 1, 2, 3, 4 or 5
 
-data_filename <- paste0(barrel_id, "_round", round_id, "_cc.rda")
+data_filename <- paste0(barrel_id, "_round", round_id, "_cc_update.rda")
 
 ccdata_ten_crosscut <- function(ccdata, y = NULL, range = 1e-05){
   #x3pdat <- bulletxtrctr::check_x3p(x3p)
@@ -73,9 +73,15 @@ time = purrr::map_chr(x3p, .f = function(x3p){
 }))
 
 
-#scans <- scans %>% mutate(
-#  x3p = x3p %>% purrr::map(.f = x3p_m_to_mum)
-#)
+scans <- scans %>% mutate(
+  x3p_increment_small = purrr::map_lgl(x3p, .f = function(x) x$header.info$incrementX == 0.000000645)
+)
+
+scans <- scans %>% mutate(
+  x3p = purrr::map2(.x = x3p, .y = x3p_increment_small, .f = function(x,y){
+    x3p <- if(y == T) {x3p_m_to_mum(x)} else{x}
+    return(x3p)
+  }))
 
 scans <- scans %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
   x3ptools::x3p_to_df(x3p)
@@ -85,12 +91,16 @@ scans <- scans %>% mutate(ccdata = purrr::map(x3p, .f = function(x3p){
 crosscuts <- scans %>%
   mutate(
     crosscut_safe = purrr::map(x3p, .f = purrr::safely(x3p_crosscut_optimize)),
-    crosscut = purrr::map(crosscut_safe, "result"),
-    crosscut = purrr::map_dbl(crosscut, function(x) ifelse(is.null(x), 200, x))
-  )
+    crosscut = purrr::map_dbl(crosscut_safe, "result"))#,
+#crosscut = purrr::map_dbl(crosscut, function(x) ifelse(is.null(x), 200, x))
+#)
 
+crosscut_by_op <- crosscuts %>% group_by(operator) %>% summarise(median_cc = median(crosscut, na.rm = T))
 
-crosscuts <- crosscuts %>% mutate(crosscut = ifelse(is.na(crosscut), median(crosscut, na.rm = T), crosscut))
+crosscuts <- crosscuts %>% mutate(crosscut = purrr::map2_dbl(.x = crosscut, .y = operator, .f = function(x,y){
+  crosscut_new <- if(is.na(x)){crosscut_by_op[crosscut_by_op$operator == y,]$median_cc} else{x}
+  return(crosscut_new)
+}))
 
 crosscuts <- crosscuts %>% select(-x3p)
 
