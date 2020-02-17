@@ -33,7 +33,7 @@ subsample_sigs <- function(sig_aligned_data, n_phases, window_size){
     filter(!is.na(phase_id)) %>%
     group_by(unique_id, phase_id) %>%
     nest() %>%
-    mutate(models = lapply(data, function(df) lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator) + (1|machine), data = df)), 
+    mutate(models = lapply(data, function(df) lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine), data = df)), 
          sigmas = lapply(models, function(model) as.data.frame(VarCorr(model))[,c("grp", "sdcor")])) %>%
     select(unique_id, phase_id, sigmas)
   
@@ -48,7 +48,7 @@ orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
 orange_sig_long <- orange_sig_data %>% 
   select(-sigs) %>%
   unnest(sigs_aligned) %>% 
-  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned))
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
 
 sampling_df <- data.frame(window_size = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)) %>%
   mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){

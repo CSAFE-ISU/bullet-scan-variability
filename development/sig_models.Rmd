@@ -11,6 +11,7 @@ library(bulletxtrctr)
 library(x3ptools)
 library(gridExtra)
 library(lme4)
+library(nlme)
 ```
 
 
@@ -20,20 +21,46 @@ First, we want to read in the data. These are signatures that have already been 
 ```{r}
 orange_sig_data <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
 
-orange_sig_data <- orange_sig_data %>% 
+orange_sig_long <- orange_sig_data %>% 
   unnest(sigs_aligned) %>% 
-  mutate(fixed_BLm = paste0(unique_id, "-", x_aligned)) 
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned), 
+         fixed_BLij = paste0(unique_id, "-", x_aligned, "-", bullet)) 
+
+orange_sig_long <- orange_sig_long %>%  ## for now we are going to remove Mya. There is a bunch of crosscut stuff that needs to get fixed. 
+  filter(operator != "Mya") %>% ## MAKE SURE YOU COME BACK AND FIX THIS LATER
+  group_by(unique_id, scan_id) %>%
+  mutate(min_scan_xloc = min(x_aligned[which(!is.na(sig2))], na.rm = T), 
+         max_scan_xloc = max(x_aligned[which(!is.na(sig2))], na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id) %>%
+  mutate(min_BL_xloc = max(min_scan_xloc, na.rm = T), 
+         max_BL_xloc = min(max_scan_xloc, na.rm = T)) %>%
+  ungroup() %>%
+  filter(x_aligned >= min_BL_xloc, x_aligned <= max_BL_xloc)
+
+tst
+```
+
+```{r}
+orange_sig_long %>% 
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.5) + 
+  facet_grid(bullet~unique_id) + 
+  theme_bw()
 ```
 
 Next, we want to get a grid of data that we can use to get estimates of operator, machine variability. 
 
 ```{r}
-orange_grid <- orange_sig_data %>%
-  mutate(fixed_BLm = as.factor(fixed_BLm),
+orange_grid <- orange_sig_long %>%
+  mutate(fixed_BLi = as.factor(fixed_BLi),
+         fixed_BLij = as.factor(fixed_BLij),
          bullet = as.factor(bullet),
          operator = as.factor(operator),
          machine = as.factor(machine),
-         unique_id = as.factor(unique_id))
+         unique_id = as.factor(unique_id)) 
+
+
 
 
 head(orange_grid)
@@ -49,11 +76,10 @@ subset_grids <- function(max_x, sample_dist, n_phase){
 }
 
 grid_test <- subset_grids(max(orange_grid$x_aligned), 100, 5)
-grid_test$data <- orange_grid
 
 
 
-subset_by_100 <- seq(1, max(orange_grid$x_aligned), by = 100)
+subset_by_100 <- seq(min(orange_grid$x_aligned), max(orange_grid$x_aligned), by = 100)
 orange_subset <- orange_grid %>% filter(x_aligned %in% subset_by_100)
 
 orange_subset_l1 <- orange_subset %>% filter(unique_id == "BL O-1")
@@ -64,17 +90,181 @@ orange_subset_l5 <- orange_subset %>% filter(unique_id == "BL O-5")
 orange_subset_l6 <- orange_subset %>% filter(unique_id == "BL O-6")
 
 
+orange_subset <- orange_subset %>% group_by(fixed_BLi) %>% mutate(error_only = sig2 - mean(sig2, na.rm = T)) %>% ungroup()
 
+orange_l1_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = orange_subset_l1, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+orange_l2_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = orange_subset_l2, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+orange_l3_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = orange_subset_l3, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+orange_l4_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = orange_subset_l4, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+orange_l5_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = orange_subset_l5, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+orange_l6_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = orange_subset_l6, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+
+
+head(orange_subset)
 ## model with everything: doesn't converge
 ## model with bullet/unique_id: singular
 
-orange_l1_model_sub <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator), data = orange_subset_l1)
-orange_l2_model_sub <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator), data = orange_subset_l2)
-orange_l3_model_sub <- lmer(sig2 ~ fixed_BLm + (1|bullet) + (1|operator), data = orange_subset_l3)
+orange_subset_l1 <- orange_subset_l1 %>% mutate(sig2_100 = sig2*100)
+
+orange_l1_model_sub <- lmer(error_only~ 1 + (1|bullet) + (1|operator) + (1|machine), 
+                            data = orange_subset, 
+                            REML = F, 
+                           control = lmerControl(optimizer ="Nelder_Mead"))
+
+#orange_subset_l1 <- orange_subset_l1 %>% mutate(bullet_machine = paste0(bullet, "-", machine))
+#orange_subset_l1_balanced <- orange_subset_l1 %>% filter(round != "Round 5", round != "Round 4", operator != "Allison")
+#orange_l1_model_sub_int <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) ,
+#                                data = orange_subset_l1, 
+#                                REML = F,
+#                                control = lmerControl(optimizer ="Nelder_Mead"), verbose = 10)
+
+orange_l1_model_sub_int <- lmer(error_only ~ 1 + (1|bullet) + (1|operator) + (1|machine) + 
+                                  (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine),
+                                data = orange_subset, 
+                                REML = T,
+                                control = lmerControl(optimizer ="Nelder_Mead"), verbose = 10)
+
+
+tst_glmer <- glmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) +(1|bullet:operator),
+                   data = orange_subset_l1_balanced)
+  
+
+orange_l2_model_sub <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator), data = orange_subset_l2)
+orange_l3_model_sub <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator), data = orange_subset_l3)
 
 
 orange_model_subset <- lmer(sig2 ~ fixed_BLm + (1|bullet/unique_id) + (1|operator/unique_id), data = orange_subset)
+
+
+orange_subset_l1 %>% group_by(operator, bullet, machine, fixed_BLi) %>% summarise(n = n())
 ```
+
+
+RANK CALCULATIONS
+
+```{r}
+orange_ranks_data <- orange_subset 
+
+orange_ranks_data %>% group_by(fixed_BLi, bullet, operator, machine) %>% summarise(n = n()) # note there are some Allison duplicates.
+
+# first lets look at 
+model_1<- lm(sig2 ~ fixed_BLi, data = orange_ranks_data)
+rankMatrix(model.matrix(model_1))[1]
+
+model_2 <- lmer(sig2 ~ fixed_BLi + (1|bullet), data = orange_ranks_data, 
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_2, "Z"), method = "qr")
+rankMatrix(getME(model_2, "X"), method = "qr")
+
+model_3 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator), data = orange_ranks_data, 
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_3, "Z"), method = "qr")
+
+model_4 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_4, "Z"), method = "qr")
+
+model_5 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + (1|bullet:operator), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_5, "Z"), method = "qr")
+
+model_6 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                  (1|bullet:operator) + (1|operator:machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_6, "Z"), method = "qr")
+
+model_7 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                  (1|bullet:operator) + (1|operator:machine) + (1|bullet:machine) + 
+                  (1|bullet:operator:machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_7, "Z"), method = "qr")
+
+model_8 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                  (1|bullet:operator) + (1|operator:machine) + (1|bullet:machine) + 
+                  (1|bullet:operator:machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_8, "Z"), method = "qr")
+```
+
+
+```{r}
+orange_ranks_data <- orange_ranks_data %>% mutate(bullet_in_BL = as.factor(paste0(unique_id, "-", bullet)))
+
+# first lets look at 
+model_1<- lm(sig2 ~ fixed_BLi, data = orange_ranks_data)
+rankMatrix(model.matrix(model_1))[1]
+
+model_2 <- lmer(sig2 ~ fixed_BLi + (1|bullet_in_BL), data = orange_ranks_data, 
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_2, "Z"), method = "qr")
+rankMatrix(getME(model_2, "X"), method = "qr")
+
+model_3 <- lmer(sig2 ~ fixed_BLi + (1|bullet_in_BL) + (1|operator), data = orange_ranks_data, 
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_3, "Z"), method = "qr")
+
+model_4 <- lmer(sig2 ~ fixed_BLi + (1|bullet_in_BL) + (1|operator) + (1|machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_4, "Z"), method = "qr")
+
+model_5 <- lmer(sig2 ~ fixed_BLi + (1|bullet_in_BL) + (1|operator) + (1|machine) + (1|bullet_in_BL:operator), 
+                data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_5, "Z"), method = "qr")
+
+model_6 <- lmer(sig2 ~ fixed_BLi + (1|bullet_in_BL) + (1|operator) + (1|machine) + 
+                  (1|bullet_in_BL:operator) + (1|operator:machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_6, "Z"), method = "qr")
+
+model_7 <- lmer(sig2 ~ fixed_BLi + (1|bullet_in_BL) + (1|operator) + (1|machine) + 
+                  (1|bullet_in_BL:operator) + (1|operator:machine) + (1|bullet_in_BL:machine) + 
+                  (1|bullet_in_BL:operator:machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_7, "Z"), method = "qr")
+
+model_8 <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                  (1|bullet:operator) + (1|operator:machine) + (1|bullet:machine) + 
+                  (1|bullet:operator:machine), data = orange_ranks_data,
+                REML = F, control = lmerControl(optimizer ="Nelder_Mead"))
+rankMatrix(getME(model_8, "Z"), method = "qr")
+```
+
 
 Let's try an "iterative" approach. That is, 
 
