@@ -51,11 +51,26 @@ orange_pairs %>% ggplot() +
 ```{r}
 pairwise_model_orange <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
                              (1|operator_gt) + 
+                             (1|machine_gt), #+ 
+                             #(1|operator_gt:bullet_gt) + 
+                             #(1|operator_gt:machine_gt) + 
+                             #(1|bullet_gt:machine_gt), 
+                           data = orange_pairs %>% filter(unique_id_l1 != "BL O-6"), 
+                           REML = FALSE, 
+                           control = lmerControl(optimizer ="Nelder_Mead"))
+
+
+
+
+pairwise_model_orange_ints <- lmer(rfscore ~ unique_id_l1 + (1|bullet_gt/unique_id_l1) + 
+                             (1|operator_gt) + 
                              (1|machine_gt) + 
                              (1|operator_gt:bullet_gt) + 
                              (1|operator_gt:machine_gt) + 
                              (1|bullet_gt:machine_gt), 
-                           data = orange_pairs %>% filter(unique_id_l1 != "BL O-6"))
+                           data = orange_pairs %>% filter(unique_id_l1 != "BL O-6"), 
+                           REML = FALSE, 
+                           control = lmerControl(optimizer ="Nelder_Mead"))
 summary(pairwise_model_orange)
 ```
 
