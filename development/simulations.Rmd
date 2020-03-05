@@ -9,11 +9,11 @@ library(tidyverse)
 library(bulletxtrctr)
 library(x3ptools)
 library(lme4)
+library(foreach)
+library(doParallel)
 ```
 
 ```{r}
-library(foreach)
-library(doParallel)
 
 #numCores <- 4 # on my own computer
 numCores <- 8 # on the server
@@ -1543,3 +1543,254 @@ sim_wrapper_df %>%
 
 ```
 
+
+
+## ORANGE UPDATED! 
+
+
+```{r}
+numCores <- 12 # on the server
+registerDoParallel(cores = numCores)
+
+
+n_bullets <- 3
+n_operators <- 8
+n_machines <- 2
+n_reps <- 3
+sigma_bullet = .4
+sigma_operator = .08
+sigma_machine = .1
+sigma_bullet_operator = .2
+sigma_bullet_machine = .1
+sigma_operator_machine = .04
+sigma_operator_bullet_machine = .05
+sigma_error = 0.5
+n_sims <- 1:1000
+reml_val <- c(T, F)
+conv_val <- c("bobyqa", "Nelder_Mead")
+
+
+
+sim_wrapper_df <- expand.grid(n_bullets = n_bullets, n_operators = n_operators, n_machines = n_machines,
+                              n_reps = n_reps, 
+                              sigma_bullet = sigma_bullet, sigma_operator = sigma_operator, 
+                              sigma_machine = sigma_machine, 
+                              sigma_bullet_operator = sigma_bullet_operator, 
+                              sigma_bullet_machine = sigma_bullet_machine, 
+                              sigma_operator_machine = sigma_operator_machine, 
+                              sigma_operator_bullet_machine = sigma_operator_bullet_machine, 
+                              sigma_error = sigma_error, 
+                              reml_val = reml_val, conv_val = conv_val,
+                              n_sims = n_sims)
+
+location_df <- readRDS("../data/simulation_mus_orange_l1.rda")
+
+list_out = foreach(m = 1:nrow(sim_wrapper_df)) %dopar% {
+  
+  n_locations <- nrow(location_df)
+  data <- sim_wrapper_df[m,]
+  n_bullets <- data$n_bullets
+  n_operators <- data$n_operators
+  n_machines <- data$n_machines
+  n_reps <- data$n_reps
+  sigma_bullet <- data$sigma_bullet
+  sigma_operator <- data$sigma_operator
+  sigma_machine <- data$sigma_machine
+  sigma_bullet_operator <- data$sigma_bullet_operator
+  sigma_bullet_machine <- data$sigma_bullet_machine
+  sigma_operator_machine <- data$sigma_operator_machine
+  sigma_operator_bullet_machine <- data$sigma_operator_bullet_machine
+  sigma_error <- data$sigma_error
+  
+  sim_data_skeleton <- data.frame(bullet = paste0("Bullet ", rep(1:n_bullets, each = n_operators)), 
+                                machine = paste0("Machine ", rep(1:n_machines, each = n_operators, times = n_bullets)), 
+                                operator = paste0("Operator ", rep(1:n_operators, times = n_bullets)))
+
+  sim_data_skeleton$repetitions = rep(list(paste0("Round ", 1:n_reps)), nrow(sim_data_skeleton))
+  sim_data_skeleton <- sim_data_skeleton %>% unnest(repetitions)
+
+  sim_data_skeleton$location_df <- rep(list(location_df), nrow(sim_data_skeleton))
+  sim_data_skeleton <- sim_data_skeleton %>% unnest(location_df)
+
+
+  sim_data <- sim_data_skeleton %>% 
+    nest(data = -c(bullet,location_names)) %>%
+    mutate(bullet_eff = rnorm(n_bullets*n_locations, sd = sigma_bullet)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(operator,location_names)) %>%
+    mutate(operator_eff = rnorm(n_operators*n_locations, sd = sigma_operator)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(machine,location_names)) %>%
+    mutate(machine_eff = rnorm(n_machines*n_locations, sd = sigma_machine)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(bullet, operator, location_names)) %>%
+    mutate(bullet_operator_eff = rnorm(n_bullets*n_operators*n_locations, sd = sigma_bullet_operator)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(bullet, machine, location_names)) %>%
+    mutate(bullet_machine_eff = rnorm(n_bullets*n_machines*n_locations, sd = sigma_bullet_machine)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(operator, machine, location_names)) %>%
+    mutate(operator_machine_eff = rnorm(n_operators*n_machines*n_locations, sd = sigma_operator_machine)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(bullet, operator, machine, location_names)) %>%
+    mutate(operator_bullet_machine_eff = rnorm(n_bullets*n_operators*n_machines*n_locations, sd = sigma_operator_bullet_machine)) %>%
+    unnest(cols = c(data)) %>%
+    mutate(error_eff = rnorm(nrow(sim_data_skeleton), sd = sigma_error))
+
+
+  sim_data <- sim_data %>% mutate(response = location_mus + bullet_eff + operator_eff + machine_eff + 
+                      bullet_operator_eff + bullet_machine_eff + operator_machine_eff + 
+                        operator_bullet_machine_eff + 
+                        error_eff)
+
+
+  sim_model_fit <- lmer(response~location_names + (1|bullet:location_names) + (1|operator:location_names) + (1|machine:location_names) + 
+                        (1|bullet:operator:location_names) + (1|bullet:machine:location_names) + (1|operator:machine:location_names) + 
+                          (1|operator:bullet:machine:location_names), 
+                      data = sim_data, 
+                      REML = data$reml_val, 
+                      control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001),
+                                            optimizer = as.character(data$conv_val)))
+
+  sim_model_sigmas <- as.data.frame(VarCorr(sim_model_fit)) %>% select(grp, sdcor)
+  
+  singular <- isSingular(sim_model_fit)
+  sim_model_sigmas$singular <- singular
+  
+  return(sim_model_sigmas)
+                                           ## this is the matrix that is returned as list element m, in the list list_out.
+}
+
+sim_wrapper_df$sim_results <- list_out
+
+saveRDS(sim_wrapper_df, "../data/simulation/simulation_orange_locations_sim_updated_effects.rda")
+
+
+```
+
+
+## PINK UPDATED! 
+
+
+```{r}
+numCores <- 12 # on the server
+registerDoParallel(cores = numCores)
+
+
+n_bullets <- 3
+n_operators <- 8
+n_machines <- 2
+n_reps <- 3
+sigma_bullet = 1
+sigma_operator = .3
+sigma_machine = .2
+sigma_bullet_operator = .2
+sigma_bullet_machine = .2
+sigma_operator_machine = .15
+sigma_operator_bullet_machine = .15
+sigma_error = 1.0
+n_sims <- 1:1000
+reml_val <- c(T, F)
+conv_val <- c("bobyqa", "Nelder_Mead")
+
+
+
+sim_wrapper_df <- expand.grid(n_bullets = n_bullets, n_operators = n_operators, n_machines = n_machines,
+                              n_reps = n_reps, 
+                              sigma_bullet = sigma_bullet, sigma_operator = sigma_operator, 
+                              sigma_machine = sigma_machine, 
+                              sigma_bullet_operator = sigma_bullet_operator, 
+                              sigma_bullet_machine = sigma_bullet_machine, 
+                              sigma_operator_machine = sigma_operator_machine, 
+                              sigma_operator_bullet_machine = sigma_operator_bullet_machine, 
+                              sigma_error = sigma_error, 
+                              reml_val = reml_val, conv_val = conv_val,
+                              n_sims = n_sims)
+
+location_df <- readRDS("../data/simulation_mus_pink_l1.rda")
+
+list_out = foreach(m = 1:nrow(sim_wrapper_df)) %dopar% {
+  
+  n_locations <- nrow(location_df)
+  data <- sim_wrapper_df[m,]
+  n_bullets <- data$n_bullets
+  n_operators <- data$n_operators
+  n_machines <- data$n_machines
+  n_reps <- data$n_reps
+  sigma_bullet <- data$sigma_bullet
+  sigma_operator <- data$sigma_operator
+  sigma_machine <- data$sigma_machine
+  sigma_bullet_operator <- data$sigma_bullet_operator
+  sigma_bullet_machine <- data$sigma_bullet_machine
+  sigma_operator_machine <- data$sigma_operator_machine
+  sigma_operator_bullet_machine <- data$sigma_operator_bullet_machine
+  sigma_error <- data$sigma_error
+  
+  sim_data_skeleton <- data.frame(bullet = paste0("Bullet ", rep(1:n_bullets, each = n_operators)), 
+                                machine = paste0("Machine ", rep(1:n_machines, each = n_operators, times = n_bullets)), 
+                                operator = paste0("Operator ", rep(1:n_operators, times = n_bullets)))
+
+  sim_data_skeleton$repetitions = rep(list(paste0("Round ", 1:n_reps)), nrow(sim_data_skeleton))
+  sim_data_skeleton <- sim_data_skeleton %>% unnest(repetitions)
+
+  sim_data_skeleton$location_df <- rep(list(location_df), nrow(sim_data_skeleton))
+  sim_data_skeleton <- sim_data_skeleton %>% unnest(location_df)
+
+
+  sim_data <- sim_data_skeleton %>% 
+    nest(data = -c(bullet,location_names)) %>%
+    mutate(bullet_eff = rnorm(n_bullets*n_locations, sd = sigma_bullet)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(operator,location_names)) %>%
+    mutate(operator_eff = rnorm(n_operators*n_locations, sd = sigma_operator)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(machine,location_names)) %>%
+    mutate(machine_eff = rnorm(n_machines*n_locations, sd = sigma_machine)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(bullet, operator, location_names)) %>%
+    mutate(bullet_operator_eff = rnorm(n_bullets*n_operators*n_locations, sd = sigma_bullet_operator)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(bullet, machine, location_names)) %>%
+    mutate(bullet_machine_eff = rnorm(n_bullets*n_machines*n_locations, sd = sigma_bullet_machine)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(operator, machine, location_names)) %>%
+    mutate(operator_machine_eff = rnorm(n_operators*n_machines*n_locations, sd = sigma_operator_machine)) %>%
+    unnest(cols = c(data)) %>%
+    nest(data = -c(bullet, operator, machine, location_names)) %>%
+    mutate(operator_bullet_machine_eff = rnorm(n_bullets*n_operators*n_machines*n_locations, sd = sigma_operator_bullet_machine)) %>%
+    unnest(cols = c(data)) %>%
+    mutate(error_eff = rnorm(nrow(sim_data_skeleton), sd = sigma_error))
+
+
+  sim_data <- sim_data %>% mutate(response = location_mus + bullet_eff + operator_eff + machine_eff + 
+                      bullet_operator_eff + bullet_machine_eff + operator_machine_eff + 
+                        operator_bullet_machine_eff + 
+                        error_eff)
+
+
+  sim_model_fit <- lmer(response~location_names + (1|bullet:location_names) + (1|operator:location_names) + (1|machine:location_names) + 
+                        (1|bullet:operator:location_names) + (1|bullet:machine:location_names) + (1|operator:machine:location_names) + 
+                          (1|operator:bullet:machine:location_names), 
+                      data = sim_data, 
+                      REML = data$reml_val, 
+                      control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001),
+                                            optimizer = as.character(data$conv_val)))
+
+  sim_model_sigmas <- as.data.frame(VarCorr(sim_model_fit)) %>% select(grp, sdcor)
+  
+  singular <- isSingular(sim_model_fit)
+  sim_model_sigmas$singular <- singular
+  
+  return(sim_model_sigmas)
+                                           ## this is the matrix that is returned as list element m, in the list list_out.
+}
+
+sim_wrapper_df$sim_results <- list_out
+
+saveRDS(sim_wrapper_df, "../data/simulation/simulation_pink_locations_sim_updated.rda")
+
+
+
+```
