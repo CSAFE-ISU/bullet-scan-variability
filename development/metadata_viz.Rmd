@@ -105,12 +105,36 @@ scans <- scans %>%
 scans %>% group_by(operator, machine, bullet, barrel, land) %>% summarise(n= n())
 scans %>% filter(operator == "Anyesha") %>% group_by(machine, bullet, barrel, land) %>% summarise(n = n())
 
-allison_issues <- scans %>% filter(operator == "Allison", (round == "Round 1" | round == "Round 2")) %>% pull(source)
-marco_issues <- scans %>% filter(operator == "Marco", round == "Round 3", barrel == "Barrel Orange", bullet == "Bullet 2", machine == "Sneox2") %>% pull(source)
-mark_issues1 <- scans %>% filter(operator == "Mark", round == "Round 4", (barrel == "Barrel Orange" | barrel == "Barrel Pink"), machine == "Sneox1") %>% pull(source)
-mark_issues2 <- scans %>% filter(operator == "Mark", round == "Round 2", barrel == "Barrel Blue", machine == "Sneox1") %>% pull(source)
-mya_issues <- scans %>% filter(operator == "Mya", round %in% c("Round 2", "Round 3"), barrel != "Barrel Blue") %>% pull(source)
-samantha_issues <- scans %>% filter(operator == "Samantha", round == "Round 3", barrel == "Barrel Orange", bullet == "Bullet 3", machine == "Sneox2") %>% pull(source)
+allison_issues <- scans %>% 
+  filter(operator == "Allison", round == "Round 1") %>% 
+  pull(source)
+allison_removes <- allison_issues[str_detect(allison_issues, "Round 2") == T]
+
+marco_issues <- scans %>% 
+  filter(operator == "Marco", round == "Round 3", barrel == "Barrel Orange", bullet == "Bullet 2", machine == "Sneox2") %>% 
+  filter(str_detect(source, "Bullet 3") == T) %>%
+  pull(source)
+
+mark_issues1 <- scans %>%
+  filter(operator == "Mark", round == "Round 4", (barrel == "Barrel Orange" | barrel == "Barrel Pink"), machine == "Sneox1") %>%
+  filter(str_detect(source, "Sneox2") == T) %>%
+  pull(source)
+mark_issues2 <- scans %>% 
+  filter(operator == "Mark", round == "Round 2", barrel == "Barrel Blue", machine == "Sneox1") %>% 
+  filter(str_detect(source, "Green") == T) %>%
+  pull(source)
+mya_issues <- scans %>% 
+  filter(operator == "Mya", round %in% c("Round 2", "Round 3"), barrel != "Barrel Blue") %>% 
+  pull(source)
+mya_removes <- mya_issues[str_detect(mya_issues, ".1.x3p") == T]
+samantha_issues <- scans %>% 
+  filter(operator == "Samantha", round == "Round 3", barrel == "Barrel Orange", bullet == "Bullet 3", machine == "Sneox2") %>%
+  filter(str_detect(source, "Bullet 1") == T) %>%
+  pull(source)
+
+
+scan_removes <- c(as.character(allison_removes), as.character(mya_removes)) 
+scan_renames <- c(as.character(marco_issues), as.character(mark_issues1), as.character(mark_issues2), as.character(samantha_issues))
 
 all_issues <- c(as.character(allison_issues), as.character(marco_issues), as.character(mark_issues1), as.character(mark_issues2), as.character(mya_issues), as.character(samantha_issues))
 

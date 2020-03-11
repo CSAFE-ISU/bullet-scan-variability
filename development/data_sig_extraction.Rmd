@@ -19,14 +19,15 @@ library(randomForest)
 Crosscut data already extracted  
 
 ```{r}
-orange_r1 <- readRDS("../data/variability_scans/Orange_round1_cc.rda")
-orange_r2 <- readRDS("../data/variability_scans/Orange_round2_cc.rda")
-orange_r3 <- readRDS("../data/variability_scans/Orange_round3_cc.rda")
-orange_r4 <- readRDS("../data/variability_scans/Orange_round4_cc.rda")
-orange_r5 <- readRDS("../data/variability_scans/Orange_round5_cc.rda")
-orange_all <- rbind(orange_r1, orange_r2, orange_r3, orange_r4, orange_r5)
-#saveRDS(orange_all, "../data/variability_scans/Orange_all_cc.rda")
-orange_crosscuts <- readRDS("../data/variability_scans/Orange_all_cc.rda")
+orange_r1 <- readRDS("../data/variability_scans/Orange_round1_cc_update.rda")
+orange_r2 <- readRDS("../data/variability_scans/Orange_round2_cc_update.rda")
+orange_r3 <- readRDS("../data/variability_scans/Orange_round3_cc_update.rda")
+orange_r4 <- readRDS("../data/variability_scans/Orange_round4_cc_update.rda")
+orange_r5 <- readRDS("../data/variability_scans/Orange_round5_cc_update.rda")
+orange_r6 <- readRDS("../data/variability_scans/Orange_round6_cc_update.rda")
+orange_all <- rbind(orange_r1, orange_r2, orange_r3, orange_r4, orange_r5, orange_r6)
+#saveRDS(orange_all, "../data/variability_scans/Orange_all_cc_updated.rda")
+orange_crosscuts <- readRDS("../data/variability_scans/Orange_all_cc_updated.rda")
 
 orange_crosscuts <- orange_crosscuts %>% 
   mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
@@ -78,7 +79,7 @@ shinyApp(
                         choices=1:length(grooves))
     })
     observeEvent(input$save,{
-      saveRDS(grooves, file="../data/variability_scans/Orange_all_grooves.rda")
+      saveRDS(grooves, file="../data/variability_scans/Orange_all_grooves_updated.rda")
       cat("groove data saved\n")
     })
     
@@ -111,12 +112,12 @@ shinyApp(
   options = list(height = 500)
 )
 #}
-#saveRDS(grooves, file="../data/variability_scans/Orange_all_grooves.rda")
+#saveRDS(grooves, file="../data/variability_scans/Orange_all_grooves_updated.rda")
 
 ```
 
 ```{r}
-grooves <- readRDS("../data/variability_scans/Orange_all_grooves.rda")
+grooves <- readRDS("../data/variability_scans/Orange_all_grooves_updated.rda")
 orange_crosscuts$grooves <- grooves
 
 
@@ -130,7 +131,7 @@ orange_crosscuts <- orange_crosscuts %>% mutate(
 )
 
 orange_sigs <- orange_crosscuts %>% select(-ccdata)
-saveRDS(orange_sigs, "../data/variability_scans/Orange_all_sigs.rda")
+saveRDS(orange_sigs, "../data/variability_scans/Orange_all_sigs_updated.rda")
 ```
 
 
@@ -265,14 +266,15 @@ saveRDS(green_sigs, "../data/variability_scans/Green_all_sigs.rda")
 Crosscut data already extracted  
 
 ```{r}
-pink_r1 <- readRDS("../data/variability_scans/Pink_round1_cc.rda")
-pink_r2 <- readRDS("../data/variability_scans/Pink_round2_cc.rda")
-pink_r3 <- readRDS("../data/variability_scans/Pink_round3_cc.rda")
-pink_r4 <- readRDS("../data/variability_scans/Pink_round4_cc.rda")
-pink_r5 <- readRDS("../data/variability_scans/Pink_round5_cc.rda")
-pink_all <- rbind(pink_r1, pink_r2, pink_r3, pink_r4, pink_r5)
-saveRDS(pink_all, "../data/variability_scans/Pink_all_cc.rda")
-pink_crosscuts <- readRDS("../data/variability_scans/Pink_all_cc.rda")
+pink_r1 <- readRDS("../data/variability_scans/Pink_round1_cc_update.rda")
+pink_r2 <- readRDS("../data/variability_scans/Pink_round2_cc_update.rda")
+pink_r3 <- readRDS("../data/variability_scans/Pink_round3_cc_update.rda")
+pink_r4 <- readRDS("../data/variability_scans/Pink_round4_cc_update.rda")
+pink_r5 <- readRDS("../data/variability_scans/Pink_round5_cc_update.rda")
+pink_r6 <- readRDS("../data/variability_scans/Pink_round6_cc_update.rda")
+pink_all <- rbind(pink_r1, pink_r2, pink_r3, pink_r4, pink_r5, pink_r6)
+saveRDS(pink_all, "../data/variability_scans/Pink_all_cc_updated.rda")
+pink_crosscuts <- readRDS("../data/variability_scans/Pink_all_cc_updated.rda")
 
 pink_crosscuts <- pink_crosscuts %>% 
   mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
@@ -324,7 +326,7 @@ shinyApp(
                         choices=1:length(grooves))
     })
     observeEvent(input$save,{
-      saveRDS(grooves, file="../data/variability_scans/Pink_all_grooves.rda")
+      saveRDS(grooves, file="../data/variability_scans/Pink_all_grooves_updated.rda")
       cat("groove data saved\n")
     })
     
@@ -357,12 +359,12 @@ shinyApp(
   options = list(height = 500)
 )
 #}
-saveRDS(grooves, file="../data/variability_scans/Pink_all_grooves.rda")
+saveRDS(grooves, file="../data/variability_scans/Pink_all_grooves_updated.rda")
 
 ```
 
 ```{r}
-pink_grooves <- readRDS("../data/variability_scans/Pink_all_grooves.rda")
+pink_grooves <- readRDS("../data/variability_scans/Pink_all_grooves_updated.rda")
 pink_crosscuts$grooves <- pink_grooves
 
 
@@ -376,7 +378,128 @@ pink_crosscuts <- pink_crosscuts %>% mutate(
 )
 
 pink_sigs <- pink_crosscuts %>% select(-ccdata)
-saveRDS(pink_sigs, "../data/variability_scans/Pink_all_sigs.rda")
+saveRDS(pink_sigs, "../data/variability_scans/Pink_all_sigs_updated.rda")
 ```
 
+
+
+
+## BARREL BLUE
+
+Crosscut data already extracted  
+
+```{r}
+blue_r1 <- readRDS("../data/variability_scans/Blue_round1_cc_update.rda")
+blue_r2 <- readRDS("../data/variability_scans/Blue_round2_cc_update.rda")
+blue_r3 <- readRDS("../data/variability_scans/Blue_round3_cc_update.rda")
+blue_r4 <- readRDS("../data/variability_scans/Blue_round4_cc_update.rda")
+blue_r5 <- readRDS("../data/variability_scans/Blue_round5_cc_update.rda")
+blue_all <- rbind(blue_r1, blue_r2, blue_r3, blue_r4, blue_r5)
+saveRDS(blue_all, "../data/variability_scans/Blue_all_cc_updated.rda")
+blue_crosscuts <- readRDS("../data/variability_scans/Blue_all_cc_updated.rda")
+
+blue_crosscuts <- blue_crosscuts %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+
+blue_crosscuts <- blue_crosscuts %>% mutate(
+  grooves = ccdata %>% 
+    purrr::map(.f = cc_locate_grooves, method = "lassofull", 
+               adjust = 10, return_plot = TRUE)
+)
+```
+
+```{r}
+ccdata <- blue_crosscuts$ccdata
+grooves <- blue_crosscuts$grooves
+
+
+
+library(shiny)
+
+#if (interactive()) {
+shinyApp(
+  
+  ui = fluidPage(
+    selectInput("k","Investigate kth plot:", selected = 1,
+                choices=1:length(grooves)),
+    textOutput("groovelocations"),
+    actionButton("confirm", "Confirm"),
+    actionButton("save", "Save"),
+    plotOutput("groovePlot", click = "plot_click"),
+    verbatimTextOutput("info")
+  ),
+  
+  server = function(input, output, session) {
+    output$groovePlot <- renderPlot({
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot 
+
+      p
+    })
+    output$groovelocations <- renderText({
+      paste("Left Groove: ",grooves[[as.numeric(input$k)]]$groove[1], 
+            " Right Groove: ",grooves[[as.numeric(input$k)]]$groove[2])
+    })
+    observeEvent(input$confirm,{
+      cat(str(input$k))
+      updateSelectInput(session, "k","Investigate kth plot:", 
+                        selected = as.numeric(input$k)+1,
+                        choices=1:length(grooves))
+    })
+    observeEvent(input$save,{
+      saveRDS(grooves, file="../data/variability_scans/Blue_all_grooves_updated.rda")
+      cat("groove data saved\n")
+    })
+    
+    observeEvent(input$plot_click,{
+      k <- as.numeric(input$k)
+      xloc <- input$plot_click$x
+      
+      gr <- grooves[[k]]$groove
+      if (abs(gr[1]-xloc) < abs(gr[2]-xloc)) {
+        grooves[[k]]$groove[1] <<- xloc
+      } else {
+        grooves[[k]]$groove[2] <<- xloc
+      }
+      output$groovePlot <- renderPlot({ 
+      k <- as.numeric(input$k)
+      p <- grooves[[k]]$plot + 
+        geom_vline(xintercept = grooves[[k]]$groove[1], colour="green") +
+        geom_vline(xintercept = grooves[[k]]$groove[2], colour="green")
+    
+      p
+      })
+  
+    })
+    output$info <- renderText({
+    paste0("x=", input$plot_click$x, "\ny=", input$plot_click$y)
+  })
+
+  },
+  
+  options = list(height = 500)
+)
+#}
+saveRDS(grooves, file="../data/variability_scans/Blue_all_grooves_updated.rda")
+
+```
+
+```{r}
+blue_grooves <- readRDS("../data/variability_scans/Blue_all_grooves_updated.rda")
+blue_crosscuts$grooves <- blue_grooves
+
+
+blue_crosscuts <- blue_crosscuts %>% mutate(
+  sigs = purrr::map2(
+    .x = ccdata, .y = grooves, 
+    .f = function(x, y) {
+      cc_get_signature(
+        ccdata = x, grooves = y, span1 = 0.75, span2 = 0.03)
+    })
+)
+
+blue_sigs <- blue_crosscuts %>% select(-ccdata)
+saveRDS(blue_sigs, "../data/variability_scans/Blue_all_sigs_updated.rda")
+```
 
