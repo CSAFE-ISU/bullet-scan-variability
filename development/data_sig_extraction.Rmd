@@ -131,6 +131,24 @@ orange_crosscuts <- orange_crosscuts %>% mutate(
 )
 
 orange_sigs <- orange_crosscuts %>% select(-ccdata)
+
+scan_filters <- readRDS("../data/scans_to_filter_out.rda")
+scan_renames <- read_csv("../data/scans_to_rename_updates.csv")
+`%notin%` = Negate(`%in%`)
+
+orange_sigs <- orange_sigs %>% filter(source %notin% scan_filters)
+orange_sigs <- left_join(orange_sigs, scan_renames)
+orange_sigs <- orange_sigs %>% mutate(barrel = ifelse(is.na(barrel_updated), barrel, barrel_updated), 
+                                      bullet = ifelse(is.na(bullet_updated), bullet, bullet_updated), 
+                                      machine = ifelse(is.na(machine_updated), machine, machine_updated))
+orange_sigs <- orange_sigs %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+orange_sigs <- orange_sigs %>% select(-c(barrel_updated, bullet_updated, machine_updated, crosscut_safe))
+
+
+orange_sigs <- orange_sigs %>% mutate(grooves = purrr::map(grooves, .f = function(x) x$groove))
+
 saveRDS(orange_sigs, "../data/variability_scans/Orange_all_sigs_updated.rda")
 ```
 
@@ -378,6 +396,22 @@ pink_crosscuts <- pink_crosscuts %>% mutate(
 )
 
 pink_sigs <- pink_crosscuts %>% select(-ccdata)
+scan_filters <- readRDS("../data/scans_to_filter_out.rda")
+scan_renames <- read_csv("../data/scans_to_rename_updates.csv")
+`%notin%` = Negate(`%in%`)
+
+pink_sigs <- pink_sigs %>% filter(source %notin% scan_filters)
+pink_sigs <- left_join(pink_sigs, scan_renames)
+pink_sigs <- pink_sigs %>% mutate(barrel = ifelse(is.na(barrel_updated), barrel, barrel_updated), 
+                                      bullet = ifelse(is.na(bullet_updated), bullet, bullet_updated), 
+                                      machine = ifelse(is.na(machine_updated), machine, machine_updated))
+pink_sigs <- pink_sigs %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+pink_sigs <- pink_sigs %>% select(-c(barrel_updated, bullet_updated, machine_updated, crosscut_safe))
+
+
+pink_sigs <- pink_sigs %>% mutate(grooves = purrr::map(grooves, .f = function(x) x$groove))
 saveRDS(pink_sigs, "../data/variability_scans/Pink_all_sigs_updated.rda")
 ```
 
@@ -500,6 +534,23 @@ blue_crosscuts <- blue_crosscuts %>% mutate(
 )
 
 blue_sigs <- blue_crosscuts %>% select(-ccdata)
+
+scan_filters <- readRDS("../data/scans_to_filter_out.rda")
+scan_renames <- read_csv("../data/scans_to_rename_updates.csv")
+`%notin%` = Negate(`%in%`)
+
+blue_sigs <- blue_sigs %>% filter(source %notin% scan_filters)
+blue_sigs <- left_join(blue_sigs, scan_renames)
+blue_sigs <- blue_sigs %>% mutate(barrel = ifelse(is.na(barrel_updated), barrel, barrel_updated), 
+                                      bullet = ifelse(is.na(bullet_updated), bullet, bullet_updated), 
+                                      machine = ifelse(is.na(machine_updated), machine, machine_updated))
+blue_sigs <- blue_sigs %>% 
+  mutate(scan_id = paste0(barrel, "-", land, "-", bullet, "-", 
+                          operator, "-", machine, "-", round))
+blue_sigs <- blue_sigs %>% select(-c(barrel_updated, bullet_updated, machine_updated, crosscut_safe))
+
+
+blue_sigs <- blue_sigs %>% mutate(grooves = purrr::map(grooves, .f = function(x) x$groove))
 saveRDS(blue_sigs, "../data/variability_scans/Blue_all_sigs_updated.rda")
 ```
 

@@ -134,7 +134,11 @@ samantha_issues <- scans %>%
 
 
 scan_removes <- c(as.character(allison_removes), as.character(mya_removes)) 
+saveRDS(scan_removes, "../data/scans_to_filter_out.rda")
 scan_renames <- c(as.character(marco_issues), as.character(mark_issues1), as.character(mark_issues2), as.character(samantha_issues))
+
+scans_to_rename <- left_join(data.frame(source = scan_renames), scans)
+write_csv(scans_to_rename, "../data/scans_to_rename.csv")
 
 all_issues <- c(as.character(allison_issues), as.character(marco_issues), as.character(mark_issues1), as.character(mark_issues2), as.character(mya_issues), as.character(samantha_issues))
 
