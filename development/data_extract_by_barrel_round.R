@@ -117,3 +117,10 @@ crosscuts <- crosscuts %>% mutate(
 )
 
 saveRDS(crosscuts, file = paste0("data/variability_scans/", data_filename)) 
+
+
+rm(filenames)
+rm(scans)
+rm(crosscuts)
+rm(crosscut_by_op)
+gc()

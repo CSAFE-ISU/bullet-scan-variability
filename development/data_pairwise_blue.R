@@ -8,8 +8,8 @@ library(doParallel)
 #args <- commandArgs(TRUE)
 #fold_id <- args[1] # should be a fold number between 1 and 5
 
-#data_filename <- paste0("/media/Raven/Variability/processed_data_storage/pink/pink_pairwise_fold", fold_id, ".rda")
-data_filename <- "/media/Raven/Variability/processed_data_storage/pink/pink_pairwise_all.rda"
+#data_filename <- paste0("/media/Raven/Variability/processed_data_storage/blue/blue_pairwise_fold", fold_id, ".rda")
+data_filename <- "/media/Raven/Variability/processed_data_storage/blue/blue_pairwise_all.rda"
 make_comparison_grid <- function(scan_ids, self_comparisons = T){
   combos <- combn(scan_ids, 2) %>% t()
   combos_df <- data.frame(land1 = combos[,1], land2 = combos[,2]) 
@@ -24,18 +24,20 @@ make_comparison_grid <- function(scan_ids, self_comparisons = T){
 }
 
 
-pink_sigs <- readRDS("data/variability_scans/Pink_all_sigs_updated.rda")
+blue_sigs <- readRDS("data/variability_scans/Blue_all_sigs_updated.rda")
 
 
-pink_lands <- unique(pink_sigs$scan_id)
 
-#pink_comparisons <- data.frame(
-#expand.grid(land1 = pink_lands, land2 = pink_lands), stringsAsFactors = FALSE)
-pink_comparisons <- make_comparison_grid(scan_ids = pink_lands, self_comparisons = T)
+blue_lands <- unique(blue_sigs$scan_id)
 
-#pink_comparisons$fold <- sort(rep(1:5, length.out = nrow(pink_comparisons)))
+#blue_comparisons <- data.frame(
+#expand.grid(land1 = blue_lands, land2 = blue_lands), stringsAsFactors = FALSE)
 
-#pink_comparisons <- pink_comparisons %>% filter(fold == fold_id)
+blue_comparisons <- make_comparison_grid(scan_ids = blue_lands, self_comparisons = T)
+
+#blue_comparisons$fold <- sort(rep(1:5, length.out = nrow(blue_comparisons)))
+
+#blue_comparisons <- blue_comparisons %>% filter(fold == fold_id)
 
 ## here need to split this into chunks
 numCores <- 12 # on the server
@@ -43,14 +45,14 @@ registerDoParallel(cores = numCores)
 
 
 
-list_out = foreach(m = 1:nrow(pink_comparisons)) %dopar% {
+list_out = foreach(m = 1:nrow(blue_comparisons)) %dopar% {
   
   
-  pink_comps <- pink_comparisons[m,]
-  pink_comps <- pink_comps %>% mutate(
+  blue_comps <- blue_comparisons[m,]
+  blue_comps <- blue_comps %>% mutate(
     aligned = purrr::map2(.x = land1, .y = land2, .f = function(xx, yy) {
-      land1 <- pink_sigs$sigs[pink_sigs$scan_id == xx][[1]]
-      land2 <- pink_sigs$sigs[pink_sigs$scan_id == yy][[1]]
+      land1 <- blue_sigs$sigs[blue_sigs$scan_id == xx][[1]]
+      land2 <- blue_sigs$sigs[blue_sigs$scan_id == yy][[1]]
       land1$bullet <- "first-land"
       land2$bullet <- "second-land"
       
@@ -58,7 +60,7 @@ list_out = foreach(m = 1:nrow(pink_comparisons)) %dopar% {
     })
   )
   
-  #pink_comps <- pink_comps %>% mutate(
+  #blue_comps <- blue_comps %>% mutate(
   #  ccf0 = aligned %>% 
   #    purrr::map_dbl(.f = function(x) extract_feature_ccf(x$lands)),
   #  lag0 = aligned %>% 
@@ -71,10 +73,10 @@ list_out = foreach(m = 1:nrow(pink_comparisons)) %dopar% {
   #    purrr::map_dbl(.f = function(x) extract_feature_overlap(x$lands))
   #)
   
-  pink_comps <- pink_comps %>% mutate(
+  blue_comps <- blue_comps %>% mutate(
     striae = aligned %>% purrr::map(.f = sig_cms_max, span = 75) 
   )
-  #pink_comps <- pink_comps %>% mutate(
+  #blue_comps <- blue_comps %>% mutate(
   #  cms_per_mm = purrr::map2(striae, aligned, .f = function(s, a) {
   #    extract_feature_cms_per_mm(s$lines, a$lands, resolution=0.645)
   #  }),
@@ -86,39 +88,37 @@ list_out = foreach(m = 1:nrow(pink_comparisons)) %dopar% {
   #  })
   #)
   
-  pink_comps <- pink_comps %>% mutate(
+  blue_comps <- blue_comps %>% mutate(
     features = purrr::map2(.x = aligned, .y = striae, .f = extract_features_all, resolution = 0.645)
   )
   
-  #pink_comps <- pink_comps %>% mutate(
+  #blue_comps <- blue_comps %>% mutate(
   #  legacy_features = purrr::map(striae, extract_features_all_legacy, resolution = 0.645)
   #)
   
-  #pink_comps <- pink_comps %>% tidyr::unnest(legacy_features) 
+  #blue_comps <- blue_comps %>% tidyr::unnest(legacy_features) 
   
   ## THIS STEP IS IMPORTANT
-  pink_comps <- pink_comps %>% select(aligned, features) %>% 
+  blue_comps <- blue_comps %>% select(aligned, features) %>% 
     tidyr::unnest(features) %>%
     select(ccf, rough_cor, D, sd_D, matches_per_mm, mismatches_per_mm, cms_per_mm, non_cms_per_mm, sum_peaks)
   
-  names(pink_comps) <- c("ccf", "rough_cor", "D", "sd_D", "matches", "mismatches", "cms", "non_cms", "sum_peaks")
+  names(blue_comps) <- c("ccf", "rough_cor", "D", "sd_D", "matches", "mismatches", "cms", "non_cms", "sum_peaks")
   # scale features before using them in the random forest, legacy features can be used out of the box
-  pink_comps$rfscore <- predict(bulletxtrctr::rtrees, newdata = pink_comps, type = "prob")[,2]
+  blue_comps$rfscore <- predict(bulletxtrctr::rtrees, newdata = blue_comps, type = "prob")[,2]
   
-  #rfscores_pink <- pink_comps %>% select(land1, land2, rfscore)
+  #rfscores_blue <- blue_comps %>% select(land1, land2, rfscore)
   
-  #rfscore <- pink_comps %>% pull(rfscore)
-  return(pink_comps)
+  #rfscore <- blue_comps %>% pull(rfscore)
+  return(blue_comps)
   ## this is the matrix that is returned as list element m, in the list list_out.
 }
 
-pink_comparisons$rf_feats_and_score <- list_out
-pink_comparisons <- pink_comparisons %>% unnest(rf_feats_and_score)
-
-#pink_comparisons <- pink_comparisons %>% mutate(rfscore = purrr::map_dbl(rfscore, .f = function(x) x[[1]]))
+blue_comparisons$rf_feats_and_score <- list_out
+blue_comparisons <- blue_comparisons %>% unnest(rf_feats_and_score)
+#blue_comparisons <- blue_comparisons %>% mutate(rfscore = purrr::map_dbl(rfscore, .f = function(x) x[[1]]))
 #rfscores_fold <- unlist(list_out)
 
-saveRDS(pink_comparisons, file = data_filename)
+saveRDS(blue_comparisons, file = data_filename)
 rm(list_out)
 gc()
-

@@ -5,8 +5,8 @@ library(randomForest)
 library(foreach)
 library(doParallel)
 
-args <- commandArgs(TRUE)
-fold_id <- args[1] # should be a fold number between 1 and 5
+#args <- commandArgs(TRUE)
+#fold_id <- args[1] # should be a fold number between 1 and 5
 
 data_filename <- paste0("/media/Raven/Variability/processed_data_storage/orange/orange_pairwise_fold", fold_id, ".rda")
 make_comparison_grid <- function(scan_ids, self_comparisons = T){
@@ -31,9 +31,10 @@ orange_lands <- unique(orange_sigs$scan_id)
 #orange_comparisons <- data.frame(
   #expand.grid(land1 = orange_lands, land2 = orange_lands), stringsAsFactors = FALSE)
 orange_comparisons <- make_comparison_grid(scan_ids = orange_lands, self_comparisons = T)
-orange_comparisons$fold <- sort(rep(1:5, length.out = nrow(orange_comparisons)))
 
-orange_comparisons <- orange_comparisons %>% filter(fold == fold_id)
+#orange_comparisons$fold <- sort(rep(1:5, length.out = nrow(orange_comparisons)))
+
+#orange_comparisons <- orange_comparisons %>% filter(fold == fold_id)
 
 ## here need to split this into chunks
 numCores <- 12 # on the server
@@ -111,6 +112,8 @@ list_out = foreach(m = 1:nrow(orange_comparisons)) %dopar% {
   }
 
 orange_comparisons$rf_feats_and_score <- list_out
+orange_comparisons <- orange_comparisons %>% unnest(rf_feats_and_score)
+
 #orange_comparisons <- orange_comparisons %>% mutate(rfscore = purrr::map_dbl(rfscore, .f = function(x) x[[1]]))
 #rfscores_fold <- unlist(list_out)
 

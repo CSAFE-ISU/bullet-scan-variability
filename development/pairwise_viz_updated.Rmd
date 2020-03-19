@@ -1,0 +1,123 @@
+---
+title: "pairwise_viz_updated"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+orange_fold1 <- readRDS("processed_data_storage/orange/orange_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
+orange_fold2 <- readRDS("processed_data_storage/orange/orange_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
+orange_fold3 <- readRDS("processed_data_storage/orange/orange_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
+orange_fold4 <- readRDS("processed_data_storage/orange/orange_pairwise_fold4.rda") %>% unnest(rf_feats_and_score)
+orange_fold5 <- readRDS("processed_data_storage/orange/orange_pairwise_fold5.rda") %>% unnest(rf_feats_and_score)
+
+saveRDS(orange_fold1, file = "processed_data_storage/orange/orange_pairwise_fold1.rda")
+saveRDS(orange_fold2, file = "processed_data_storage/orange/orange_pairwise_fold2.rda")
+saveRDS(orange_fold3, file = "processed_data_storage/orange/orange_pairwise_fold3.rda")
+saveRDS(orange_fold4, file = "processed_data_storage/orange/orange_pairwise_fold4.rda")
+saveRDS(orange_fold5, file = "processed_data_storage/orange/orange_pairwise_fold5.rda")
+
+orange <- rbind(orange_fold1, orange_fold2, orange_fold3, orange_fold4, orange_fold5)
+
+pink_fold1 <- readRDS("processed_data_storage/pink/pink_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
+pink_fold2 <- readRDS("processed_data_storage/pink/pink_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
+pink_fold3 <- readRDS("processed_data_storage/pink/pink_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
+pink_fold4 <- readRDS("processed_data_storage/pink/pink_pairwise_fold4.rda") %>% unnest(rf_feats_and_score)
+pink_fold5 <- readRDS("processed_data_storage/pink/pink_pairwise_fold5.rda") %>% unnest(rf_feats_and_score)
+
+saveRDS(pink_fold1, file = "processed_data_storage/pink/pink_pairwise_fold1.rda")
+saveRDS(pink_fold2, file = "processed_data_storage/pink/pink_pairwise_fold2.rda")
+saveRDS(pink_fold3, file = "processed_data_storage/pink/pink_pairwise_fold3.rda")
+saveRDS(pink_fold4, file = "processed_data_storage/pink/pink_pairwise_fold4.rda")
+saveRDS(pink_fold5, file = "processed_data_storage/pink/pink_pairwise_fold5.rda")
+
+pink <- rbind(pink_fold1, pink_fold2, pink_fold3, pink_fold4, pink_fold5)
+
+
+
+blue_fold1 <- readRDS("processed_data_storage/blue/blue_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
+blue_fold2 <- readRDS("processed_data_storage/blue/blue_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
+blue_fold3 <- readRDS("processed_data_storage/blue/blue_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
+blue_fold4 <- readRDS("processed_data_storage/blue/blue_pairwise_fold4.rda") %>% unnest(rf_feats_and_score)
+blue_fold5 <- readRDS("processed_data_storage/blue/blue_pairwise_fold5.rda") %>% unnest(rf_feats_and_score)
+
+saveRDS(blue_fold1, file = "processed_data_storage/blue/blue_pairwise_fold1.rda")
+saveRDS(blue_fold2, file = "processed_data_storage/blue/blue_pairwise_fold2.rda")
+saveRDS(blue_fold3, file = "processed_data_storage/blue/blue_pairwise_fold3.rda")
+saveRDS(blue_fold4, file = "processed_data_storage/blue/blue_pairwise_fold4.rda")
+saveRDS(blue_fold5, file = "processed_data_storage/blue/blue_pairwise_fold5.rda")
+
+
+blue <- rbind(blue_fold1, blue_fold2, blue_fold3, blue_fold4, blue_fold5)
+```
+
+
+## Visualize pairwise score distributions  
+
+```{r}
+orange %>% 
+  ggplot() + 
+  geom_histogram(aes(x = rfscore), color = "white", fill = "darkorange") + 
+  geom_histogram(aes(x = ccf), color = "black", fill = NA) + 
+  theme_bw() 
+
+pink %>% 
+  ggplot() + 
+  geom_histogram(aes(x = rfscore), color = "white", fill = "salmon") + 
+  geom_histogram(aes(x = ccf), color = "black", fill = NA) + 
+  theme_bw()
+
+blue %>% 
+  ggplot() + 
+  geom_histogram(aes(x = rfscore), color = "white", fill = "steelblue") + 
+  geom_histogram(aes(x = ccf), color = "black", fill = NA) + 
+  theme_bw() 
+
+
+```
+
+
+# Ground Truthing  
+
+Step 1. Create list of all lands / scans and save as CSV.  
+Step 2. Left join the list of all of them with the list of already ID'd ground truth from Phase 1. 
+Step 3. Ground truth remaining lands
+
+```{r}
+orange_sigs <- readRDS("../data/variability_scans/Orange_all_sigs_updated.rda")
+orange_gt_1 <- read_csv("../data/variability_scans/orange_gt.csv")
+
+orange_lands <- data.frame(scan_id = unique(orange_sigs$scan_id))
+
+orange_lands <- orange_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
+orange_lands <- left_join(orange_lands, orange_gt_1)
+
+write_csv(orange_lands, "../data/variability_scans/orange_gt_update.csv")
+```
+
+```{r}
+pink_sigs <- readRDS("../data/variability_scans/Pink_all_sigs_updated.rda")
+pink_gt_1 <- read_csv("../data/variability_scans/pink_gt.csv")
+
+pink_lands <- data.frame(scan_id = unique(pink_sigs$scan_id))
+
+pink_lands <- pink_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
+pink_lands <- left_join(pink_lands, pink_gt_1)
+
+write_csv(pink_lands, "../data/variability_scans/pink_gt_update.csv")
+pink_lands %>% group_by(operator, bullet, machine, round) %>% summarise(n = n())
+```
+
+Blue doesn't have an original GT file since it's new in Phase 2, so all we need to do is create it and save it! 
+```{r}
+blue_sigs <- readRDS("../data/variability_scans/Blue_all_sigs_updated.rda")
+
+blue_lands <- data.frame(scan_id = unique(blue_sigs$scan_id))
+
+blue_lands <- blue_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
+write_csv(blue_lands, "../data/variability_scans/blue_gt_update.csv")
+```
