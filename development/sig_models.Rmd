@@ -92,6 +92,62 @@ orange_subset_l6 <- orange_subset %>% filter(unique_id == "BL O-6")
 
 orange_subset <- orange_subset %>% group_by(fixed_BLi) %>% mutate(error_only = sig2 - mean(sig2, na.rm = T)) %>% ungroup()
 
+orange_l1_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi), 
+                       data = orange_subset_l1, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+orange_l2_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = orange_subset_l2, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+orange_l3_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = orange_subset_l3, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+
+orange_l4_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = orange_subset_l4, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+orange_l5_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = orange_subset_l5, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+orange_l6_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = orange_subset_l6, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+
 orange_l1_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
                                        (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
                                      (1|bullet:operator:machine), 
@@ -173,6 +229,321 @@ orange_model_subset <- lmer(sig2 ~ fixed_BLm + (1|bullet/unique_id) + (1|operato
 
 orange_subset_l1 %>% group_by(operator, bullet, machine, fixed_BLi) %>% summarise(n = n())
 ```
+
+
+PINK SIMULATION SETUP
+```{r}
+pink_sig_data <- readRDS("../data/variability_scans/pink_aligned_sigs.rda")
+
+pink_sig_long <- pink_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned), 
+         fixed_BLij = paste0(unique_id, "-", x_aligned, "-", bullet)) 
+
+pink_sig_long <- pink_sig_long %>%  ## for now we are going to remove Mya. There is a bunch of crosscut stuff that needs to get fixed. 
+  filter(operator != "Mya") %>% ## MAKE SURE YOU COME BACK AND FIX THIS LATER
+  group_by(unique_id, scan_id) %>%
+  mutate(min_scan_xloc = min(x_aligned[which(!is.na(sig2))], na.rm = T), 
+         max_scan_xloc = max(x_aligned[which(!is.na(sig2))], na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id) %>%
+  mutate(min_BL_xloc = max(min_scan_xloc, na.rm = T), 
+         max_BL_xloc = min(max_scan_xloc, na.rm = T)) %>%
+  ungroup() %>%
+  filter(x_aligned >= min_BL_xloc, x_aligned <= max_BL_xloc)
+
+
+
+pink_grid <- pink_sig_long %>%
+  mutate(fixed_BLi = as.factor(fixed_BLi),
+         fixed_BLij = as.factor(fixed_BLij),
+         bullet = as.factor(bullet),
+         operator = as.factor(operator),
+         machine = as.factor(machine),
+         unique_id = as.factor(unique_id)) 
+
+
+
+
+subset_by_100 <- seq(min(pink_grid$x_aligned), max(pink_grid$x_aligned), by = 100)
+pink_subset <- pink_grid %>% filter(x_aligned %in% subset_by_100)
+
+pink_subset_l1 <- pink_subset %>% filter(unique_id == "BL P-1")
+pink_subset_l2 <- pink_subset %>% filter(unique_id == "BL P-2")
+pink_subset_l3 <- pink_subset %>% filter(unique_id == "BL P-3")
+pink_subset_l4 <- pink_subset %>% filter(unique_id == "BL P-4")
+pink_subset_l5 <- pink_subset %>% filter(unique_id == "BL P-5")
+pink_subset_l6 <- pink_subset %>% filter(unique_id == "BL P-6")
+
+
+pink_subset <- pink_subset %>% group_by(fixed_BLi) %>% mutate(error_only = sig2 - mean(sig2, na.rm = T)) %>% ungroup()
+
+pink_l1_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = pink_subset_l1, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+
+pink_l1_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = pink_subset_l1, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+pink_l2_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = pink_subset_l2, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+pink_l3_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = pink_subset_l3, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+pink_l4_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = pink_subset_l4, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+pink_l5_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = pink_subset_l5, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+pink_l6_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = pink_subset_l6, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+location_names_pink_l1 <- names(coef(pink_l1_starting_estimates)$machine[1,])[-1]
+location_mus_pink_l1 <- c(-0.6898696,3.971882,-0.0449902,-2.340964,-3.834323,-5.141999,
+                          -5.771252,-4.954539,3.013491,-3.143397,1.804202,0.6705898,-2.378623,
+                          -3.376722,-0.3020821,-1.6298,-1.257118)
+
+# location_mus <- 
+simulation_mus_pink_l1 <- data.frame(location_names = location_names_pink_l1, 
+                                     location_mus = location_mus_pink_l1)
+saveRDS(simulation_mus_pink_l1, "../data/simulation_mus_pink_l1.rda")
+
+pink_l2_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = pink_subset_l2, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+pink_l3_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = pink_subset_l3, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+pink_l4_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = pink_subset_l4, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+pink_l5_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = pink_subset_l5, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+pink_l6_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = pink_subset_l6, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+
+```
+
+GREEN SIMULATION SETUP
+```{r}
+green_sig_data <- readRDS("../data/variability_scans/green_aligned_sigs.rda")
+
+green_sig_long <- green_sig_data %>% 
+  unnest(sigs_aligned) %>% 
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned), 
+         fixed_BLij = paste0(unique_id, "-", x_aligned, "-", bullet)) 
+
+green_sig_long <- green_sig_long %>%  ## for now we are going to remove Mya. There is a bunch of crosscut stuff that needs to get fixed. 
+  filter(operator != "Mya") %>% ## MAKE SURE YOU COME BACK AND FIX THIS LATER
+  group_by(unique_id, scan_id) %>%
+  mutate(min_scan_xloc = min(x_aligned[which(!is.na(sig2))], na.rm = T), 
+         max_scan_xloc = max(x_aligned[which(!is.na(sig2))], na.rm = T)) %>%
+  ungroup() %>%
+  group_by(unique_id) %>%
+  mutate(min_BL_xloc = max(min_scan_xloc, na.rm = T), 
+         max_BL_xloc = min(max_scan_xloc, na.rm = T)) %>%
+  ungroup() %>%
+  filter(x_aligned >= min_BL_xloc, x_aligned <= max_BL_xloc)
+
+
+
+green_grid <- green_sig_long %>%
+  mutate(fixed_BLi = as.factor(fixed_BLi),
+         fixed_BLij = as.factor(fixed_BLij),
+         bullet = as.factor(bullet),
+         operator = as.factor(operator),
+         machine = as.factor(machine),
+         unique_id = as.factor(unique_id)) 
+
+
+
+
+subset_by_100 <- seq(min(green_grid$x_aligned), max(green_grid$x_aligned), by = 100)
+green_subset <- green_grid %>% filter(x_aligned %in% subset_by_100)
+
+green_subset_l1 <- green_subset %>% filter(unique_id == "BL G-1")
+green_subset_l2 <- green_subset %>% filter(unique_id == "BL G-2")
+green_subset_l3 <- green_subset %>% filter(unique_id == "BL G-3")
+green_subset_l4 <- green_subset %>% filter(unique_id == "BL G-4")
+green_subset_l5 <- green_subset %>% filter(unique_id == "BL G-5")
+green_subset_l6 <- green_subset %>% filter(unique_id == "BL G-6")
+
+
+green_subset <- green_subset %>% group_by(fixed_BLi) %>% mutate(error_only = sig2 - mean(sig2, na.rm = T)) %>% ungroup()
+
+green_l1_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = green_subset_l1, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+
+green_l2_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = green_subset_l2, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+location_names_green_l2 <- names(coef(green_l2_starting_estimates)$machine[1,])[-1]
+location_mus_green_l2 <- c(0.09412902,0.1764255,0.2339106,0.2074083,0.2526828,0.06270219,
+                          -0.1545076,-0.264128,-0.164086,-0.03304241,0.194123,-0.1795482,
+                          0.003427175)
+
+green_l1_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = green_subset_l1, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+green_l2_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = green_subset_l2, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+green_l3_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = green_subset_l3, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+green_l4_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = green_subset_l4, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+green_l5_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = green_subset_l5, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+green_l6_test <- lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) + (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                         (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                         (1|machine:operator:fixed_BLi) + (1|bullet:machine:operator:fixed_BLi),
+                       data = green_subset_l6, 
+                       REML = T, 
+                       control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001), 
+                                             check.nobs.vs.rankZ = "warningSmall"))
+
+# location_mus <- 
+simulation_mus_green_l2 <- data.frame(location_names = location_names_green_l2, 
+                                     location_mus = location_mus_green_l2)
+saveRDS(simulation_mus_green_l2, "../data/simulation_mus_green_l2.rda")
+
+green_l3_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = green_subset_l3, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+green_l4_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = green_subset_l4, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+green_l5_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = green_subset_l5, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+green_l6_starting_estimates <- lmer(sig2 ~ fixed_BLi + (1|bullet) + (1|operator) + (1|machine) + 
+                                       (1|bullet:operator) + (1|bullet:machine) + (1|operator:machine) + 
+                                     (1|bullet:operator:machine), 
+                                     data = green_subset_l6, 
+                                     REML = F,
+                                     control = lmerControl(optimizer = "Nelder_Mead"))
+
+
+```
+
+
+
+
 
 
 RANK CALCULATIONS

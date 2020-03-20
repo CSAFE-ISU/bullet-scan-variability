@@ -5,7 +5,290 @@ output: html_document
 
 ```{r}
 library(tidyverse)
+```
 
+
+# BLUE
+
+
+```{r}
+#blue_sigs <- readRDS("/Volumes/databuddy/Variability/data/Blue_all_sigs_updated.rda")
+
+#blue_lands <- data.frame(scan_id = unique(blue_sigs$scan_id))
+
+#blue_lands <- blue_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
+#write_csv(blue_lands, "../data/variability_scans/blue_gt_update.csv")
+
+blue <- readRDS("/Volumes/databuddy/Variability/data/blue_pairwise_all.rda")
+blue <- blue %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         machine_S2 == "Sneox1", operator_S2 == "Anyesha", 
+         round_S2 == "Round 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~bullet_S2 + round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+```
+
+## Anyesha
+```{r}
+# bullet 1
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+## Marco
+```{r}
+# bullet 1
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## Mark
+```{r}
+# bullet 1
+blue %>%
+    filter(barrel_S1 == "Barrel Blue", barrel_S2 == "Barrel Blue") %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+blue %>%
+    filter(barrel_S1 == "Barrel Blue", barrel_S2 == "Barrel Blue") %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+blue %>%
+  filter(barrel_S1 == "Barrel Blue", barrel_S2 == "Barrel Blue") %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+## Mya
+```{r}
+# bullet 1
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Mya", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Mya", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Mya", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## Samantha
+```{r}
+# bullet 1
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+blue %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "steelblue", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+# ORANGE 
+```{r}
 orange_fold1 <- readRDS("processed_data_storage/orange/orange_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
 orange_fold2 <- readRDS("processed_data_storage/orange/orange_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
 orange_fold3 <- readRDS("processed_data_storage/orange/orange_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
@@ -19,7 +302,10 @@ saveRDS(orange_fold4, file = "processed_data_storage/orange/orange_pairwise_fold
 saveRDS(orange_fold5, file = "processed_data_storage/orange/orange_pairwise_fold5.rda")
 
 orange <- rbind(orange_fold1, orange_fold2, orange_fold3, orange_fold4, orange_fold5)
+```
 
+# PINK
+```{r}
 pink_fold1 <- readRDS("processed_data_storage/pink/pink_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
 pink_fold2 <- readRDS("processed_data_storage/pink/pink_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
 pink_fold3 <- readRDS("processed_data_storage/pink/pink_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
@@ -36,24 +322,13 @@ pink <- rbind(pink_fold1, pink_fold2, pink_fold3, pink_fold4, pink_fold5)
 
 
 
-blue_fold1 <- readRDS("processed_data_storage/blue/blue_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
-blue_fold2 <- readRDS("processed_data_storage/blue/blue_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
-blue_fold3 <- readRDS("processed_data_storage/blue/blue_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
-blue_fold4 <- readRDS("processed_data_storage/blue/blue_pairwise_fold4.rda") %>% unnest(rf_feats_and_score)
-blue_fold5 <- readRDS("processed_data_storage/blue/blue_pairwise_fold5.rda") %>% unnest(rf_feats_and_score)
 
-saveRDS(blue_fold1, file = "processed_data_storage/blue/blue_pairwise_fold1.rda")
-saveRDS(blue_fold2, file = "processed_data_storage/blue/blue_pairwise_fold2.rda")
-saveRDS(blue_fold3, file = "processed_data_storage/blue/blue_pairwise_fold3.rda")
-saveRDS(blue_fold4, file = "processed_data_storage/blue/blue_pairwise_fold4.rda")
-saveRDS(blue_fold5, file = "processed_data_storage/blue/blue_pairwise_fold5.rda")
-
-
-blue <- rbind(blue_fold1, blue_fold2, blue_fold3, blue_fold4, blue_fold5)
 ```
 
 
-## Visualize pairwise score distributions  
+
+
+# Visualize pairwise score distributions  
 
 ```{r}
 orange %>% 
@@ -111,13 +386,5 @@ write_csv(pink_lands, "../data/variability_scans/pink_gt_update.csv")
 pink_lands %>% group_by(operator, bullet, machine, round) %>% summarise(n = n())
 ```
 
-Blue doesn't have an original GT file since it's new in Phase 2, so all we need to do is create it and save it! 
-```{r}
-blue_sigs <- readRDS("../data/variability_scans/Blue_all_sigs_updated.rda")
 
-blue_lands <- data.frame(scan_id = unique(blue_sigs$scan_id))
 
-blue_lands <- blue_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
-
-write_csv(blue_lands, "../data/variability_scans/blue_gt_update.csv")
-```

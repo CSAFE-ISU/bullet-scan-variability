@@ -8,7 +8,7 @@ output: html_document
 # ORANGE 
 
 ```{r}
-orange_sigs <- readRDS("../data/variability_scans/Orange_all_sigs.rda")
+orange_sigs <- readRDS("../data/variability_scans/Orange_all_sigs_updated.rda")
 
 orange_lands <- data.frame(scan_id = unique(orange_sigs$scan_id))
 
