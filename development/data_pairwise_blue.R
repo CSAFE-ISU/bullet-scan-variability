@@ -26,6 +26,7 @@ make_comparison_grid <- function(scan_ids, self_comparisons = T){
 
 blue_sigs <- readRDS("data/variability_scans/Blue_all_sigs_updated.rda")
 
+blue_sigs <- blue_sigs %>% filter(barrel == "Barrel Blue")
 
 
 blue_lands <- unique(blue_sigs$scan_id)

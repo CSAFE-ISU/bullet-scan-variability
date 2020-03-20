@@ -8,7 +8,8 @@ library(doParallel)
 #args <- commandArgs(TRUE)
 #fold_id <- args[1] # should be a fold number between 1 and 5
 
-data_filename <- paste0("/media/Raven/Variability/processed_data_storage/orange/orange_pairwise_fold", fold_id, ".rda")
+#data_filename <- paste0("/media/Raven/Variability/processed_data_storage/orange/orange_pairwise_fold", fold_id, ".rda")
+data_filename <- "/media/Raven/Variability/processed_data_storage/orange/orange_pairwise_all.rda"
 make_comparison_grid <- function(scan_ids, self_comparisons = T){
   combos <- combn(scan_ids, 2) %>% t()
   combos_df <- data.frame(land1 = combos[,1], land2 = combos[,2]) 
