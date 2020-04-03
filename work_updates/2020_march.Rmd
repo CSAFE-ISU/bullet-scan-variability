@@ -1,0 +1,264 @@
+---
+title: "Variability Model Simulations"
+author: "Kiegan Rice"
+output: pdf_document
+---
+
+```{r, echo = F, warning = F, message = F}
+library(tidyverse)
+
+labels <- c("operator:bullet:machine:location_names" = "Operator:Bullet:Machine",
+            "bullet:operator:location_names" = "Bullet:Operator", 
+            "operator:machine:location_names" = "Operator:Machine", 
+            "bullet:machine:location_names" = "Bullet:Machine",
+            "operator:location_names" = "Operator", 
+            "bullet:location_names" = "Bullet",
+            "machine:location_names" = "Machine", 
+            "Residual" = "Residual")
+labels_sing <- c("TRUE" = "Singular Model", "FALSE" = "Non-Singular Model")
+```
+
+# Model Specification  
+
+# Simulation Description  
+
+# Simulation Results  
+
+```{r, echo = F}
+orange_sims <- readRDS("../data/simulation/simulation_orange_locations_sim.rda")
+pink_sims <- readRDS("../data/simulation/simulation_pink_locations_sim.rda")
+green_sims <- readRDS("../data/simulation/simulation_green_locations_sim.rda")
+```
+
+
+
+## Barrel Orange  
+
+```{r, echo = F, message = F, warning = F}
+true_ints_orange_effsizes <- data.frame(grp = c("operator:bullet:machine:location_names", 
+                                "bullet:operator:location_names", "operator:machine:location_names", "bullet:machine:location_names", 
+                                "operator:location_names", "bullet:location_names", "machine:location_names", "Residual"), 
+                        true_val = c(.0001, 
+                                     .2, .001, .1,
+                                     .08, .4, .1, .5))
+
+orange_sims_long <- orange_sims %>% unnest(sim_results)
+perc_sing_orange <- sum(orange_sims_long$singular == T)/nrow(orange_sims_long)
+
+orange_sims %>% 
+  unnest(sim_results) %>% 
+  left_join(., true_ints_orange_effsizes) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names", "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  filter(singular == T) %>%
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled..), color = "white", alpha = 0.5, fill = "darkorange") + 
+  geom_vline(aes(xintercept = true_val)) + 
+  facet_grid(reml_val + conv_val~grp, scales= "free_x") +
+  theme_bw() + 
+  labs(title = paste0("Singular Models (", round(perc_sing_orange*100, 2), "% of all models)"))
+
+
+orange_sims %>% 
+  unnest(sim_results) %>% 
+  left_join(., true_ints_orange_effsizes) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names", "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  #filter(singular == F) %>%
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled..), color = "white", alpha = 0.5, fill= "darkorange") + 
+  geom_vline(aes(xintercept = true_val)) + 
+  facet_grid(reml_val + conv_val~grp, scales= "free_x") +
+  theme_bw() #+ 
+  #labs(title = paste0("Non-Singular Models (", round((1-perc_sing_orange)*100, 2), "% of all models)"))
+
+```
+
+
+## Barrel Pink  
+
+```{r, echo = F, message = F, warning = F}
+true_ints_pink_effsizes <- data.frame(grp = c("operator:bullet:machine:location_names", 
+                                "bullet:operator:location_names", "operator:machine:location_names",
+                                "bullet:machine:location_names", 
+                                "operator:location_names", "bullet:location_names", "machine:location_names", "Residual"), 
+                        true_val = c(.1, 
+                                     .2, .1, .2,
+                                     .3, 1.0, .2, 1.0))
+
+pink_sims_long <- pink_sims %>% unnest(sim_results)
+perc_sing_pink <- sum(pink_sims_long$singular == T)/nrow(pink_sims_long)
+
+pink_sims %>% 
+  unnest(sim_results) %>% 
+  left_join(., true_ints_pink_effsizes) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names", "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  filter(singular == T) %>%
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled..), color = "white", alpha = 0.5, fill = "salmon") + 
+  geom_vline(aes(xintercept = true_val)) + 
+  facet_grid(reml_val + conv_val~grp, scales= "free_x") +
+  theme_bw() + 
+  labs(title = paste0("Singular Models (", round(perc_sing_pink*100, 2), "% of all models)"))
+
+pink_sims %>% 
+  unnest(sim_results) %>% 
+  left_join(., true_ints_pink_effsizes) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names", "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  filter(singular == F) %>%
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled..), color = "white", alpha = 0.5, fill= "salmon") + 
+  geom_vline(aes(xintercept = true_val)) + 
+  facet_grid(reml_val + conv_val~grp, scales= "free_x") +
+  theme_bw() + 
+  labs(title = paste0("Non-Singular Models (", round((1-perc_sing_pink)*100, 2), "% of all models)"))
+
+```
+
+
+## Barrel Green   
+```{r, echo = F, message = F, warning = F}
+true_ints_green_effsizes <- data.frame(grp = c("operator:bullet:machine:location_names", 
+                                "bullet:operator:location_names", "operator:machine:location_names",
+                                "bullet:machine:location_names", 
+                                "operator:location_names", "bullet:location_names", "machine:location_names", "Residual"), 
+                        true_val = c(.001, 
+                                     .3, .005, .001,
+                                     .03, 0.5, .04, 0.5))
+
+
+green_sims_long <- green_sims %>% unnest(sim_results)
+perc_sing_green <- sum(green_sims_long$singular == T)/nrow(green_sims_long)
+
+green_sims %>% 
+  unnest(sim_results) %>% 
+  left_join(., true_ints_green_effsizes) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names", "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  filter(singular == T) %>%
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled..), color = "white", alpha = 0.5, fill = "darkgreen") + 
+  geom_vline(aes(xintercept = true_val)) + 
+  facet_grid(reml_val + conv_val~grp, scales= "free_x") +
+  theme_bw() + 
+  labs(title = paste0("Singular Models (", round(perc_sing_green*100, 2), "% of all models)"))
+```
+
+
+```{r, echo = F, warning = F, message = F}
+green_sims %>% 
+  unnest(sim_results) %>% 
+  left_join(., true_ints_green_effsizes) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names", "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  filter(singular == F) %>%
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled..), color = "white", alpha = 0.5, fill= "darkgreen") + 
+  geom_vline(aes(xintercept = true_val)) + 
+  facet_grid(reml_val + conv_val~grp, scales= "free_x") +
+  theme_bw() + 
+  labs(title = paste0("Non-Singular Models (", round((1-perc_sing_green)*100, 2), "% of all models)"))
+```
+
+
+
+
+
+## Orange - Original vs. Update
+```{r}
+orange_sims_update <- readRDS("../data/simulation/simulation_orange_locations_sim_updated_effects.rda")
+orange_sims_update_long <- orange_sims_update %>% unnest(sim_results)
+#true_ints_orange_effsizes
+orange_sims_update_eff_sizes <- data.frame(grp = c("operator:bullet:machine:location_names", 
+                                "bullet:operator:location_names", "operator:machine:location_names", "bullet:machine:location_names", 
+                                "operator:location_names", "bullet:location_names", "machine:location_names", "Residual"), 
+                        true_val = c(.05, 
+                                     .2, .04, .1,
+                                     .08, .4, .1, .5))
+
+true_ints_orange_effsizes$simulation_run <- "Initial Simulation"
+orange_sims_update_eff_sizes$simulation_run <- "Updated (Initial Median)"
+
+
+orange_eff_sizes <- rbind(true_ints_orange_effsizes, orange_sims_update_eff_sizes)
+
+orange_sims_update_long$simulation_run <- "Updated (Initial Median)"
+orange_sims_long$simulation_run <- "Initial Simulation"
+orange_sims_all <- rbind(orange_sims_long, orange_sims_update_long)
+
+
+orange_sims_all %>% 
+  left_join(., orange_eff_sizes) %>%
+  filter(conv_val == "bobyqa", reml_val == TRUE) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names",
+                                      "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled.., 
+                   fill = factor(singular)), color = "white", alpha = 0.6) + 
+  scale_fill_manual(name = "Singularity", values = c("grey60", "goldenrod2")) + 
+  scale_linetype_manual(name = "Simulation Run", values = c(1,2)) + 
+  geom_vline(aes(xintercept = true_val, linetype = factor(simulation_run)), color = "black") + 
+  facet_grid(simulation_run~grp, scales= "free_x", 
+             labeller = labeller(grp = labels, singular = labels_sing)) +
+  theme_bw() +
+  labs(title = "Singular Model Simulation Results", 
+       subtitle = "Barrel Orange - Land 2",
+       x = expression(paste("Estimated sigma value (in ", mu, "m)")), 
+       y = "Scaled density") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+```
+
+
+```{r}
+pink_sims_update <- readRDS("../data/simulation/simulation_pink_locations_sim_updated.rda")
+pink_sims_update_long <- pink_sims_update %>% unnest(sim_results)
+#true_ints_pink_effsizes
+pink_sims_update_eff_sizes <- data.frame(grp = c("operator:bullet:machine:location_names", 
+                                "bullet:operator:location_names", "operator:machine:location_names",
+                                "bullet:machine:location_names", 
+                                "operator:location_names", "bullet:location_names", "machine:location_names", "Residual"), 
+                        true_val = c(.15, 
+                                     .2, .15, .2,
+                                     .3, 1.0, .2, 1.0))
+
+
+true_ints_pink_effsizes$simulation_run <- "Initial Simulation"
+pink_sims_update_eff_sizes$simulation_run <- "Updated (Initial Median)"
+
+
+pink_eff_sizes <- rbind(true_ints_pink_effsizes, pink_sims_update_eff_sizes)
+
+pink_sims_update_long$simulation_run <- "Updated (Initial Median)"
+pink_sims_long$simulation_run <- "Initial Simulation"
+pink_sims_all <- rbind(pink_sims_long, pink_sims_update_long)
+
+
+pink_sims_all %>% 
+  left_join(., pink_eff_sizes) %>%
+  filter(conv_val == "bobyqa", reml_val == TRUE) %>%
+  mutate(grp = factor(grp, levels = c("bullet:location_names", "operator:location_names", "machine:location_names", 
+                                      "bullet:machine:location_names", "bullet:operator:location_names",
+                                      "operator:machine:location_names", 
+                                      "operator:bullet:machine:location_names", "Residual"))) %>% 
+  ggplot() + 
+  geom_density(aes(x = sdcor, y = ..scaled.., 
+                   fill = factor(simulation_run)), color = "white", alpha = 0.6) + 
+  scale_fill_manual(name = "Simulation Run", values = c("darkorchid4", "darkgreen")) + 
+  scale_linetype_manual(name = "Simulation Run", values = c(1,2)) + 
+  geom_vline(aes(xintercept = true_val, linetype = factor(simulation_run)), color = "black") + 
+  facet_grid(simulation_run + singular~grp, scales= "free_x", 
+             labeller = labeller(grp = labels, singular = labels_sing)) +
+  theme_bw() +
+  labs(title = "Barrel Pink Initial Simulation vs. Updated Simulation")
+```
+

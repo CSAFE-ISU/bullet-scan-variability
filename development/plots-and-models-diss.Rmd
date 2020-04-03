@@ -1,0 +1,2258 @@
+---
+author: "Kiegan Rice"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(gridExtra)
+
+#labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+#       y =  expression(paste("Relative Height z"[i], " (", mu, "m)")))
+```
+
+Define some color schemes: 
+```{r}
+orange_bullets_palette <- c("sandybrown", "darkorange", "darkorange4")
+orange_bullets_palette <- hcl.colors(5, palette = "Oranges")[c(4, 2, 1)]
+pink_bullets_palette <- c("lightpink", "coral2", "tomato4")
+blue_bullets_palette <- c("cadetblue3", "royalblue1", "midnightblue")
+machines_palette <- c("darkgreen", "purple4")
+zissou_palette5 <- hcl.colors(5, palette = "Zissou 1")
+zissou_palette10 <- hcl.colors(10, palette = "Zissou 1")
+zissou_palette7 <- hcl.colors(7, palette = "Zissou 1")
+zissou_palette6 <- hcl.colors(6, palette = "Zissou 1")
+blue_exemplar <- "steelblue"
+orange_exemplar <- "darkorange"
+pink_exemplar <- "salmon"
+```
+Read in blue, pink, orange aligned sigs. Sigs & aligned sigs nested, but ground truth & operator blinded are there. 
+
+```{r}
+blue_aligned <- readRDS("../data/variability_scans/blue_aligned_sigs.rda")
+orange_aligned <- readRDS("../data/variability_scans/orange_aligned_sigs.rda")
+pink_aligned <- readRDS("../data/variability_scans/pink_aligned_sigs.rda")
+
+all_aligned <- rbind(blue_aligned, orange_aligned, pink_aligned)
+all_aligned <- all_aligned %>% filter(barrel != "Barrel Green")
+```
+
+```{r}
+
+land_examples <- c("BL B-6", "BL P-4", "BL O-2")
+land_labeller <- c("BL B-6" = "Barrel Blue, Land 6", 
+                     "BL P-4" = "Barrel Pink, Land 4", 
+                     "BL O-2" = "Barrel Orange, Land 2")
+
+
+blue_l6 <- blue_aligned %>% filter(unique_id %in% land_examples) %>% unnest(sigs_aligned)
+blue_l6$source[which.max(blue_l6$sig2)] -> filter_blue
+#orange_l1 <- orange_aligned %>% filter(unique_id %in% land_examples) %>% unnest(sigs_aligned)
+#orange_l1$source[which.max(orange_l1$sig2)] -> filter_orange
+pink_l4 <- pink_aligned %>% filter(unique_id %in% land_examples) %>% unnest(sigs_aligned)
+pink_l4$source[which.max(pink_l4$sig2)] -> filter_pink
+
+blue_aligned %>% 
+  filter(unique_id %in% land_examples, source != filter_blue) %>%
+  unnest(sigs_aligned) %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  scale_color_manual(name = "Bullet of Origin", values = blue_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")),
+       y = expression(paste("Signature Height z"[i], " (", mu, "m)")), 
+       title = "Signatures from repeated scans of Barrel Blue - Land 6", 
+       subtitle = "coaligned in the x direction") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+orange_aligned %>% 
+  filter(unique_id == "BL O-2") %>%
+  unnest(sigs_aligned) %>% 
+  filter(sig2 > -5) %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  scale_color_manual(name = "Bullet of Origin", values = orange_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")),
+       y = expression(paste("Signature Height z"[i], " (", mu, "m)")), 
+       title = "Signatures from repeated scans of Barrel Orange - Land 2", 
+       subtitle = "coaligned in the x direction") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+pink_aligned %>% 
+  filter(unique_id %in% land_examples, source != filter_pink) %>%
+  unnest(sigs_aligned) %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  scale_color_manual(name = "Bullet of Origin", values = pink_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")),
+       y = expression(paste("Signature Height z"[i], " (", mu, "m)")), 
+       title = "Signatures from repeated scans of Barrel Pink - Land 4", 
+       subtitle = "coaligned in the x direction") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+## saved at 1150 x 400
+```
+
+
+```{r}
+blue_aligned %>% 
+  filter(unique_id %in% land_examples, source != filter_blue) %>%
+  unnest(sigs_aligned) %>% 
+  group_by(x_aligned) %>%
+  mutate(mean_by_x = mean(sig2, na.rm = T), 
+         resid_by_x = sig2 - mean_by_x) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  scale_color_manual(name = "Bullet of Origin", values = blue_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")),
+       y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
+       title = "Signatures from repeated scans of Barrel Blue - Land 6", 
+       subtitle = "centered by mean at each x location") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+orange_aligned %>% 
+  filter(unique_id == "BL O-6") %>%
+  unnest(sigs_aligned) %>% 
+  group_by(x_aligned) %>%
+  mutate(mean_by_x = mean(sig2, na.rm = T), 
+      resid_by_x = sig2 - mean_by_x) %>%
+  ungroup() %>%
+  #filter(sig2 > -5) %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  facet_wrap(~bullet, nrow = 3) +
+  scale_color_manual(name = "Bullet of Origin", values = orange_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")),
+       y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
+       title = "Signatures from repeated scans of Barrel Orange - Land 2", 
+       subtitle = "centered by mean at each x location") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+pink_aligned %>% 
+  filter(unique_id %in% land_examples, source != filter_pink) %>%
+  unnest(sigs_aligned) %>% 
+  group_by(x_aligned) %>%
+  mutate(mean_by_x = mean(sig2, na.rm = T), 
+         resid_by_x = sig2 - mean_by_x) %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet)), alpha = 0.7) + 
+  scale_color_manual(name = "Bullet of Origin", values = pink_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")),
+       y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
+       title = "Signatures from repeated scans of Barrel Pink - Land 4", 
+       subtitle = "centered by mean at each x location") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+## saved at 1150 x 400
+```
+
+
+
+```{r}
+sigs_acf <- all_aligned %>%
+  select(scan_id, unique_id, barrel, bullet, operator_code, machine, round, land, sigs) %>%
+  mutate(acf = purrr::map(sigs, .f = function(sigs){
+    acf_obj <- acf(sigs$sig, lag.max = 200, type = "correlation", na.action = na.pass, plot = FALSE)
+    data.frame(lag = acf_obj$lag[,,1], acf = acf_obj$acf[,,1])
+  }))
+
+acf_examples <- c("BL B-6", "BL P-3", "BL O-2")
+acf_bl_labeller <- c("BL B-6" = "Barrel Blue, Land 6", 
+                     "BL P-3" = "Barrel Pink, Land 3", 
+                     "BL O-2" = "Barrel Orange, Land 2")
+
+acf_examples <- c("BL B-6", "BL P-4", "BL O-2")
+acf_bl_labeller <- c("BL B-6" = "Barrel Blue, Land 6", 
+                     "BL P-4" = "Barrel Pink, Land 4", 
+                     "BL O-2" = "Barrel Orange, Land 2")
+sigs_acf %>%
+  filter(unique_id %in% acf_examples) %>%
+  unnest(acf) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, color = "grey60") +
+  geom_line(aes(x = lag, y = acf, group = scan_id, colour = factor(unique_id)), alpha = 0.5) +
+  geom_vline(xintercept = 100, color = "black", linetype = 4) +
+  theme_bw() +
+  facet_wrap(~unique_id, nrow = 3, labeller = labeller(unique_id = acf_bl_labeller)) +
+  scale_color_manual(name = "Barrel-Land ID", 
+                     breaks = c("BL O-2", "BL P-4", "BL B-6"), 
+                     values = c(orange_exemplar, pink_exemplar, blue_exemplar)) +
+  labs(x = "Lag Value", y = "ACF Value", title = "ACF functions for repeated scans of 3 example barrel-lands", 
+       subtitle = "Each line represents one signature") + 
+  theme(legend.position = 'none', plot.subtitle = element_text(face = "italic"))
+
+## grab a single acf vs. single line plot: 
+one_acf <- acf(all_aligned[1,]$sigs[[1]]$sig, lag.max = 200, type = "correlation", na.action = na.pass, plot = F)
+one_acf_df <- data.frame(lag = one_acf$lag[,,1], acf = one_acf$acf[,,1])
+plot(one_acf, main = "Example ACF plot for one signature, lags 0 - 200")
+one_acf_df %>% 
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "grey60")+
+  geom_line(aes(x = lag, y = acf), color = "steelblue") + 
+  labs(x = "Lag Value", y = "ACF Value", title = "Example single-line ACF plot for one signature, lags 0-200") + 
+  theme_bw()
+```
+
+Add length of signature as a variable. Also extract min(x) and max(x) values. 
+```{r}
+all_aligned <- all_aligned %>% 
+  mutate(sig_length = purrr::map_dbl(sigs, .f = function(sigs) {dim(sigs %>% filter(!is.na(sig)))[1]}),
+         sig_start = purrr::map_dbl(sigs_aligned, .f = function(sigs_aligned) {
+          actual_sig <- sigs_aligned %>% filter(!is.na(sig2))
+          return(min(actual_sig$x_aligned))
+         }), 
+         sig_end = purrr::map_dbl(sigs_aligned, .f = function(sigs_aligned){
+           actual_sig <- sigs_aligned %>% filter(!is.na(sig2))
+           return(max(actual_sig$x_aligned))
+         }))
+```
+
+
+
+Plot min(x) and max(x) to get a sense for distribution of where "trimming" will happen.  
+Also plot length of signature to get a sense for distribution.  
+```{r}
+all_aligned %>%
+  ggplot() + 
+  geom_histogram(aes(x = sig_length, fill = barrel), color = "black") + 
+  facet_wrap(~barrel, nrow = 3) + 
+  scale_fill_manual(name = "barrel", 
+                    breaks = c("Barrel Orange", "Barrel Blue", "Barrel Pink"), 
+                    values = c(orange_exemplar, blue_exemplar, pink_exemplar)) + 
+  theme_bw()
+# blue cutoff - 2500
+# orange cutoff - 2500
+# pink cutoff - 1800
+
+all_aligned %>%
+  ggplot() + 
+  geom_histogram(aes(x = sig_start, fill = barrel), color = "black") + 
+  facet_wrap(~barrel, nrow = 3) + 
+  scale_fill_manual(name = "barrel", 
+                    breaks = c("Barrel Orange", "Barrel Blue", "Barrel Pink"), 
+                    values = c(orange_exemplar, blue_exemplar, pink_exemplar)) + 
+  theme_bw()
+
+all_aligned %>%
+  ggplot() + 
+  geom_histogram(aes(x = sig_end, fill = barrel), color = "black") + 
+  facet_wrap(~barrel, nrow = 3) + 
+  scale_fill_manual(name = "barrel", 
+                    breaks = c("Barrel Orange", "Barrel Blue", "Barrel Pink"), 
+                    values = c(orange_exemplar, blue_exemplar, pink_exemplar)) + 
+  theme_bw()
+```
+
+
+
+```{r}
+all_aligned <- all_aligned %>% mutate(sig_short = F, 
+                                      sig_short = ifelse((barrel == "Barrel Blue" & sig_length < 2750), T, sig_short),
+                                      sig_short = ifelse((barrel == "Barrel Orange" & sig_length < 2800), T, sig_short),
+                                      sig_short = ifelse((barrel == "Barrel Pink" & sig_length < 2100), T, sig_short))
+
+all_aligned_shorts <- all_aligned %>% filter(sig_short == T)
+all_aligned_notshorts <- all_aligned %>% filter(sig_short == F)
+
+cutoffs_by_id <- all_aligned_notshorts %>% 
+  group_by(unique_id) %>%
+  summarise(min_trim = max(sig_start, na.rm = T), 
+         max_trim = min(sig_end, na.rm = T))
+
+all_aligned <- left_join(all_aligned, cutoffs_by_id, by = "unique_id")
+
+all_aligned_long <- all_aligned %>% unnest(sigs_aligned)
+
+all_aligned_long <- all_aligned_long %>% mutate(keep_x = ifelse((x_aligned <= max_trim & x_aligned >= min_trim), T, F))
+
+
+trim_examples <- c("BL B-6", "BL P-4", "BL O-2")
+trim_examples_labeller = c("BL B-6" = "Barrel Blue, Land 6", 
+                           "BL P-4" = "Barrel Pink, Land 4", 
+                           "BL O-2" = "Barrel Orange, Land 2")
+
+
+all_aligned_long %>%
+  filter(unique_id %in% trim_examples, sig_short == F, source != filter_blue) %>%
+  mutate(edges = ifelse(keep_x == F, sig2, NA), 
+         middle = ifelse(keep_x == T, sig2, NA)) %>%
+  #filter(keep_x = F) %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = edges, group = scan_id), color = "grey80") + 
+  geom_line(aes(x = x_aligned, y = middle, group = scan_id, color = factor(barrel)), alpha = 0.6) + 
+  geom_vline(aes(xintercept = min_trim), data = cutoffs_by_id %>% filter(unique_id %in% trim_examples), color = "grey20") + 
+  geom_vline(aes(xintercept = max_trim), data = cutoffs_by_id %>% filter(unique_id %in% trim_examples), color = "grey20") + 
+  facet_wrap(~unique_id, nrow = 3, labeller = labeller(unique_id = trim_examples_labeller)) + 
+  scale_color_manual(name = "Barrel", breaks = c("Barrel Blue", "Barrel Orange", "Barrel Pink"), 
+                     values = c(blue_exemplar, orange_exemplar, pink_exemplar)) + 
+  theme_bw() + 
+  theme(legend.position = 'none', plot.subtitle = element_text(face = "italic")) + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")), 
+       title = "Signature tails trimming for 3 example barrel-lands", 
+       subtitle = "to balance number of points by location when modeling")
+```
+
+
+Make a plot of one of the lands and the following steps:
+1. All aligned
+2. Trimmed (loose "tails" greyed out in background?)  
+3. Subsampled at each 100th X location - points in color, sigs in grey in background  
+
+
+Do the following: 
+
+## Signature Modeling, including results and figures  
+
+Blue-orange-pink signatures, choose "exemplar" land from each. (pool all lands from each in model??)  
+
+```{r}
+subsample_sigs <- function(sig_aligned_data, n_phases, window_size){
+  x_vals <- data.frame(x_aligned = unique(sig_aligned_data[,"x_aligned"]), phase_id = NA)
+  jump <- window_size/n_phases
+  sample_size <- floor(nrow(x_vals)/window_size)
+  #phase_ids <- list(length = n_phases)
+  for(i in 1:n_phases){
+    phase_ids <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    #phase_ids[[i]] <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    x_vals <- x_vals %>% mutate(phase_id = ifelse(x_aligned %in% phase_ids, i, phase_id))
+  }
+
+  
+  dat_phased <- left_join(sig_aligned_data, x_vals)
+  dat_nest <- dat_phased %>%
+    filter(!is.na(phase_id)) %>%
+    group_by(unique_id, phase_id) %>%
+    nest() %>%
+    mutate(models = lapply(data, function(df) lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) +
+                                                     (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                                                     (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                                                     (1|operator:machine:fixed_BLi) + 
+                                                     (1|operator:bullet:machine:fixed_BLi), 
+                      data = df, 
+                      REML = T,
+                      control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001)))), 
+         sigmas = lapply(models, function(model) as.data.frame(VarCorr(model))[,c("grp", "sdcor")])) %>%
+    select(unique_id, phase_id, sigmas)
+  
+  
+  return(dat_nest)
+}
+
+subsample_sigs_pooled <- function(sig_aligned_data, n_phases, window_size){
+  x_vals <- data.frame(x_aligned = unique(sig_aligned_data[,"x_aligned"]), phase_id = NA)
+  jump <- window_size/n_phases
+  sample_size <- floor(nrow(x_vals)/window_size)
+  #phase_ids <- list(length = n_phases)
+  for(i in 1:n_phases){
+    phase_ids <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    #phase_ids[[i]] <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    x_vals <- x_vals %>% mutate(phase_id = ifelse(x_aligned %in% phase_ids, i, phase_id))
+  }
+
+  
+  dat_phased <- left_join(sig_aligned_data, x_vals)
+  dat_nest <- dat_phased %>%
+    filter(!is.na(phase_id)) %>%
+    mutate(unique_id = "Pooled") %>%
+    group_by(unique_id, phase_id) %>%
+    nest() %>%
+    mutate(models = lapply(data, function(df) lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) +
+                                                     (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                                                     (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                                                     (1|operator:machine:fixed_BLi) + 
+                                                     (1|operator:bullet:machine:fixed_BLi), 
+                      data = df, 
+                      REML = T,
+                      control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001)))), 
+         sigmas = lapply(models, function(model) as.data.frame(VarCorr(model))[,c("grp", "sdcor")])) %>%
+    select(unique_id, phase_id, sigmas)
+  
+  
+  return(dat_nest)
+}
+```
+
+Fit subsample models with windows: c(5, 10, 15, 20, ..., 100) with phases = 5  
+
+```{r}
+orange_example_long <- all_aligned_long %>% 
+  filter(unique_id == "BL O-2", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+# orange_example_df <- data.frame(window_size = c(10, 20, 30, 40,50,60,70,80,90,100)) %>%
+#   mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+#     subsample_sigs(sig_aligned_data = orange_example_long, n_phases = 5, window_size = x)
+#   })) %>% 
+#   unnest(cols = c(sampling_ests)) %>% 
+#   unnest(cols = c(sigmas))
+# 
+# orange_means <- orange_example_df %>% group_by(window_size, grp) %>%
+#   summarise(avg_sd = mean(sdcor))
+# 
+# orange_example_df %>%
+#   ggplot() + 
+#   #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+#   geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+#   geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = orange_means) + 
+#   scale_color_manual(name = "Phase", values = zissou_palette5) + 
+#   facet_wrap(~grp, scales = "free_y", nrow = 2) + 
+#   theme_bw()
+
+orange_example2_df <- data.frame(window_size = seq(10, 100, by = 10)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_example_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+orange_example2_df <- orange_example2_df %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", 
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+orange_means2 <- orange_example2_df %>% group_by(window_size, grp) %>%
+  summarise(avg_sd = mean(sdcor))
+
+saveRDS(orange_example2_df, "../data/variability_scans/subsampled_orange2_phases_data.rda")
+orange_example2_df %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = orange_means2) + 
+  facet_wrap(~grp, nrow = 2) + 
+  theme_bw()
+
+
+orange_subsample_plot <- orange_example2_df %>%
+  ggplot() + 
+  #geom_point(aes(x = factor(window_size), y = sdcor, color = factor(phase_id)), alpha = 0.4) + 
+  geom_boxplot(aes(x = factor(window_size), y = sdcor), fill = "darkorange", alpha = 0.7) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  #geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = pink_means2) + 
+  facet_wrap(~grp, nrow = 1) + 
+  labs(x = "Window Size, w", y = "Estimated sigma value", 
+       title = "10-phase subsampling results", 
+       subtitle = "Barrel Orange, Land 1") + 
+  theme_bw() + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+```
+
+
+```{r}
+blue_example_long <- all_aligned_long %>% 
+  filter(unique_id == "BL B-6", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_example_df <- data.frame(window_size = c(10, 20, 30, 40,50,60,70,80,90,100)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_example_long, n_phases = 5, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+blue_means <- blue_example_df %>% group_by(window_size, grp) %>%
+  summarise(avg_sd = mean(sdcor))
+
+blue_example_df %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = blue_means) + 
+  scale_color_manual(name = "Phase", values = zissou_palette5) + 
+  facet_wrap(~grp, scales = "free_y", nrow = 2) + 
+  theme_bw()
+
+blue_example2_df <- data.frame(window_size = seq(10, 100, by = 10)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_example_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+blue_example2_df <- blue_example2_df %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", 
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+saveRDS(blue_example2_df, "../data/variability_scans/subsampled_blue6_phases_data.rda")
+
+blue_means2 <- blue_example2_df %>% group_by(window_size, grp) %>%
+  summarise(avg_sd = mean(sdcor))
+
+blue_example2_df %>%
+  ggplot() + 
+  #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+  geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = blue_means2) + 
+  facet_wrap(~grp, nrow = 2) + 
+  theme_bw()
+
+blue_subsample_plot <- blue_example2_df %>%
+  ggplot() + 
+  #geom_point(aes(x = factor(window_size), y = sdcor, color = factor(phase_id)), alpha = 0.4) + 
+  geom_boxplot(aes(x = factor(window_size), y = sdcor), fill = "steelblue", alpha = 0.7) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  #geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = pink_means2) + 
+  facet_wrap(~grp, nrow = 1) + 
+  labs(x = "Window Size, w", y = "Estimated sigma value", 
+       title = "10-phase subsampling results", 
+       subtitle = "Barrel Blue, Land 6") + 
+  theme_bw() + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+```
+
+
+```{r}
+pink_example_long <- all_aligned_long %>% 
+  filter(unique_id == "BL P-4", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+# pink_example_df <- data.frame(window_size = c(10, 20, 30, 40,50,60,70,80,90,100)) %>%
+#   mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+#     subsample_sigs(sig_aligned_data = pink_example_long, n_phases = 5, window_size = x)
+#   })) %>% 
+#   unnest(cols = c(sampling_ests)) %>% 
+#   unnest(cols = c(sigmas))
+# 
+# pink_means <- pink_example_df %>% group_by(window_size, grp) %>%
+#   summarise(avg_sd = mean(sdcor))
+# 
+# pink_example_df %>%
+#   ggplot() + 
+#   #geom_boxplot(aes(x = factor(window_size), y = sdcor)) + 
+#   geom_point(aes(x = window_size, y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+#   geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = pink_means) + 
+#   scale_color_manual(name = "Phase", values = zissou_palette5) + 
+#   facet_wrap(~grp, scales = "free_y", nrow = 2) + 
+#   theme_bw()
+
+pink_example2_df <- data.frame(window_size = seq(10, 100, by = 10)) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_example_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+pink_example2_df <- pink_example2_df %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", 
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+
+pink_means2 <- pink_example2_df %>% group_by(window_size, grp) %>%
+  summarise(avg_sd = mean(sdcor))
+
+saveRDS(pink_example2_df, "../data/variability_scans/subsampled_pink4_phases_data.rda")
+
+
+pink_subsample_plot <- pink_example2_df %>%
+  ggplot() + 
+  #geom_point(aes(x = factor(window_size), y = sdcor, color = factor(phase_id)), alpha = 0.4) + 
+  geom_boxplot(aes(x = factor(window_size), y = sdcor), fill = "salmon", alpha = 0.7) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  #geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = pink_means2) + 
+  facet_wrap(~grp, nrow = 1) + 
+  labs(x = "Window Size, w", y = "Estimated sigma value", 
+       title = "10-phase subsampling results", 
+       subtitle = "Barrel Pink, Land 4") + 
+  theme_bw() + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+```
+
+```{r}
+
+example2_all <- rbind(blue_example2_df, orange_example2_df, pink_example2_df)
+
+#y = expression(paste("Estimated sigma value (", mu, "m)"))
+
+example2_all %>%
+  ggplot() + 
+  geom_boxplot(aes(x = factor(window_size), y = sdcor, fill = factor(unique_id)), alpha = 0.9) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  #geom_line(aes(x = window_size, y = avg_sd), color = "grey20", data = pink_means2) + 
+  facet_grid(unique_id~grp, scales = "free_y", labeller = labeller(unique_id = trim_examples_labeller)) + 
+  scale_fill_manual(name = "", breaks = c("BL B-6", "BL O-2", "BL P-4"), 
+                               values = c(blue_exemplar, orange_exemplar, pink_exemplar)) + 
+  labs(x = "Window Size, w", y = expression(paste("Estimated sigma value (", mu, "m)")), 
+       title = "10-phase subsampling results for 3 example barrel-lands") + 
+  theme_bw() + 
+  theme(legend.position = 'none')
+  
+```
+
+
+Now do actual model fits at w = 100 with 10 phases for: 
+each of the 6 lands for barrel blue AND pooled for barrel blue  
+
+```{r}
+blue_l1_long <- all_aligned_long %>%  ### 2 singular
+  filter(unique_id == "BL B-1", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_l1_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_l1_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+blue_l2_long <- all_aligned_long %>%  ### 6 singular
+  filter(unique_id == "BL B-2", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_l2_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_l2_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+blue_l3_long <- all_aligned_long %>%  ### 7 singular 
+  filter(unique_id == "BL B-3", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_l3_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_l3_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+blue_l4_long <- all_aligned_long %>%  ### 8 singular... 
+  filter(unique_id == "BL B-4", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_l4_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_l4_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+blue_l5_long <- all_aligned_long %>%  # 1 singular, 1 failed convergence
+  filter(unique_id == "BL B-5", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_l5_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_l5_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+blue_l6_long <- all_aligned_long %>%  # 3 singular, 1 failed convergence
+  filter(unique_id == "BL B-6", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_l6_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = blue_l6_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+blue_pooled_long <- all_aligned_long %>%  # 3 singular, 1 failed convergence
+  filter(barrel == "Barrel Blue", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+blue_pooled_df <- data.frame(window_size = 100) %>% ## NO SINGULAR!!!! 
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs_pooled(sig_aligned_data = blue_pooled_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+blue_df <- rbind(blue_l1_df, blue_l2_df, blue_l3_df, blue_l4_df, blue_l5_df, blue_l6_df, blue_pooled_df)
+
+blue_df <- blue_df %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", 
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+write_csv(blue_df, "/Volumes/databuddy/Variability/data/blue_signature_model_results.csv")
+
+blue_df %>%
+  mutate(unique_id = factor(unique_id, levels = c("BL B-1", "BL B-2", "BL B-3", "BL B-4", "BL B-5", "BL B-6", "Pooled"), 
+                            labels = c("B-1", "B-2", "B-3", "B-4", "B-5", "B-6", "Pooled"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = factor(unique_id), y = sdcor), fill = "steelblue", alpha = 0.7) + 
+  #geom_point(aes(x = factor(unique_id), y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  facet_wrap(~grp,  nrow = 2) + 
+  theme_bw() + 
+  labs(x = "Barrel-Land", y = expression(paste("Estimated sigma value (", mu, "m)")), 
+       title = "Barrel Blue Signature-Level Model Parameter Estimates", 
+       subtitle = "window size = 100, phases = 10") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+blue_df %>% group_by(unique_id, grp) %>% 
+  summarise(sigma = round(mean(sdcor), 5), 
+            min_sigma = round(min(sdcor), 5), 
+            max_sigma = round(max(sdcor), 5)) %>% 
+  arrange(grp)
+
+blue_df %>% group_by(unique_id) %>%
+  #filter(grp == "Residual") %>%
+  summarise(sigma_repeat = round(mean(sdcor[grp == "Residual"]), 5), 
+            sigma_reprod = round(sqrt(mean(sdcor[grp == "Bullet"])^2 + 
+                                   mean(sdcor[grp == "Operator"])^2 + 
+                                   mean(sdcor[grp == "Machine"])^2 + 
+                                   mean(sdcor[grp == "Bullet-Machine"])^2 + 
+                                   mean(sdcor[grp == "Operator-Machine"])^2 + 
+                                   mean(sdcor[grp == "Bullet-Operator"])^2 + 
+                                   mean(sdcor[grp == "Operator-Bullet-Machine"])^2), 5))
+```
+
+each of the 6 lands for barrel orange AND pooled for barrel orange  
+```{r}
+orange_l1_long <- all_aligned_long %>%  ### 7 singular
+  filter(unique_id == "BL O-1", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_l1_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_l1_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+orange_l2_long <- all_aligned_long %>%  ### 7 singular
+  filter(unique_id == "BL O-2", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_l2_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_l2_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+orange_l3_long <- all_aligned_long %>% ### 5 singular 
+  filter(unique_id == "BL O-3", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_l3_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_l3_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+orange_l4_long <- all_aligned_long %>% ### 9 singular
+  filter(unique_id == "BL O-4", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_l4_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_l4_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+orange_l5_long <- all_aligned_long %>% ### 10 singular.... boo
+  filter(unique_id == "BL O-5", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_l5_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_l5_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+orange_l6_long <- all_aligned_long %>%  ### 8 singular
+  filter(unique_id == "BL O-6", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_l6_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = orange_l6_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+orange_pooled_long <- all_aligned_long %>%  
+  filter(barrel == "Barrel Orange", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+orange_pooled_df <- data.frame(window_size = 100) %>% ### 8 singular, 1 failed convergence
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs_pooled(sig_aligned_data = orange_pooled_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+orange_df <- rbind(orange_l1_df, orange_l2_df, orange_l3_df, orange_l4_df, orange_l5_df, orange_l6_df, orange_pooled_df)
+
+orange_df <- orange_df %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", 
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+
+write_csv(orange_df, "/Volumes/databuddy/Variability/data/orange_signature_model_results.csv")
+orange_df %>%
+  mutate(unique_id = factor(unique_id, levels = c("BL O-1", "BL O-2", "BL O-3", "BL O-4", "BL O-5", "BL O-6", "Pooled"), 
+                            labels = c("O-1", "O-2", "O-3", "O-4", "O-5", "O-6", "Pooled"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = factor(unique_id), y = sdcor), fill = "darkorange", alpha = 0.7) + 
+  #geom_point(aes(x = factor(unique_id), y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  facet_wrap(~grp,  nrow = 2) + 
+  theme_bw() + 
+  labs(x = "Barrel-Land", y = expression(paste("Estimated sigma value (", mu, "m)")), 
+       title = "Barrel Orange Signature-Level Model Parameter Estimates", 
+       subtitle = "window size = 100, phases = 10") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+orange_df %>% group_by(unique_id, grp) %>% 
+  summarise(sigma = round(mean(sdcor), 5), 
+            min_sigma = round(min(sdcor), 5), 
+            max_sigma = round(max(sdcor), 5)) %>% 
+  arrange(grp)
+
+orange_df %>% group_by(unique_id) %>%
+  #filter(grp == "Residual") %>%
+  summarise(sigma_repeat = round(mean(sdcor[grp == "Residual"]), 5), 
+            sigma_reprod = round(sqrt(mean(sdcor[grp == "Bullet"])^2 + 
+                                   mean(sdcor[grp == "Operator"])^2 + 
+                                   mean(sdcor[grp == "Machine"])^2 + 
+                                   mean(sdcor[grp == "Bullet-Machine"])^2 + 
+                                   mean(sdcor[grp == "Operator-Machine"])^2 + 
+                                   mean(sdcor[grp == "Bullet-Operator"])^2 + 
+                                   mean(sdcor[grp == "Operator-Bullet-Machine"])^2), 5))
+
+```
+
+each of the 6 lands for barrel pink AND pooled for barrel pink  
+
+```{r}
+pink_l1_long <- all_aligned_long %>%  ### 10 singular
+  filter(unique_id == "BL P-1", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l1_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_l1_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+pink_l2_long <- all_aligned_long %>%  ### 5 singular
+  filter(unique_id == "BL P-2", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l2_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_l2_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+pink_l3_long <- all_aligned_long %>%  ### 7 singular 
+  filter(unique_id == "BL P-3", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l3_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_l3_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+pink_l4_long <- all_aligned_long %>%  ### 7 singular, 1 failed convergence
+  filter(unique_id == "BL P-4", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l4_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_l4_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+pink_l5_long <- all_aligned_long %>%  # 2 singular, 1 failed convergence
+  filter(unique_id == "BL P-5", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l5_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_l5_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+pink_l6_long <- all_aligned_long %>%  # 1 singular
+  filter(unique_id == "BL P-6", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l6_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs(sig_aligned_data = pink_l6_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+pink_pooled_long <- all_aligned_long %>%  # 4 singular
+  filter(barrel == "Barrel Pink", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_pooled_df <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs_pooled(sig_aligned_data = pink_pooled_long, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+
+pink_df <- rbind(pink_l1_df, pink_l2_df, pink_l3_df, pink_l4_df, pink_l5_df, pink_l6_df, pink_pooled_df)
+
+pink_df <- pink_df %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", 
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+
+write_csv(pink_df, "/Volumes/databuddy/Variability/data/pink_signature_model_results.csv")
+
+
+pink_df %>%
+  mutate(unique_id = factor(unique_id, levels = c("BL P-1", "BL P-2", "BL P-3", "BL P-4", "BL P-5", "BL P-6", "Pooled"), 
+                            labels = c("P-1", "P-2", "P-3", "P-4", "P-5", "P-6", "Pooled"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = factor(unique_id), y = sdcor), fill = "salmon", alpha = 0.7) + 
+  #geom_point(aes(x = factor(unique_id), y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  facet_wrap(~grp,  nrow = 2) + 
+  theme_bw() + 
+  labs(x = "Barrel-Land", y = expression(paste("Estimated sigma value (", mu, "m)")), 
+       title = "Barrel Pink Signature-Level Model Parameter Estimates", 
+       subtitle = "window size = 100, phases = 10") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+pink_df %>% group_by(unique_id, grp) %>% 
+  summarise(sigma = round(mean(sdcor), 5), 
+            min_sigma = round(min(sdcor), 5), 
+            max_sigma = round(max(sdcor), 5)) %>% 
+  arrange(grp)
+
+pink_df %>% group_by(unique_id) %>%
+  #filter(grp == "Residual") %>%
+  summarise(sigma_repeat = round(mean(sdcor[grp == "Residual"]), 5), 
+            sigma_reprod = round(sqrt(mean(sdcor[grp == "Bullet"])^2 + 
+                                   mean(sdcor[grp == "Operator"])^2 + 
+                                   mean(sdcor[grp == "Machine"])^2 + 
+                                   mean(sdcor[grp == "Bullet-Machine"])^2 + 
+                                   mean(sdcor[grp == "Operator-Machine"])^2 + 
+                                   mean(sdcor[grp == "Bullet-Operator"])^2 + 
+                                   mean(sdcor[grp == "Operator-Bullet-Machine"])^2), 5))
+
+```
+
+
+## Pairwise modeling, including results and figures
+Define pairwise grouping structure.  
+
+
+Blue!!!  
+```{r}
+blue_pairwise <- readRDS("/Volumes/databuddy/Variability/data/blue_pairwise_all.rda")
+blue_gt <- read_csv("../data/variability_scans/blue_gt_update.csv")
+
+blue_gt_land1 <- blue_gt %>% mutate(scan_id_land1 = scan_id, unique_id_land1 = unique_id) %>% select(scan_id_land1, unique_id_land1)
+blue_gt_land2 <- blue_gt %>% mutate(scan_id_land2 = scan_id, unique_id_land2 = unique_id) %>% select(scan_id_land2, unique_id_land2)
+
+blue_pairwise <- blue_pairwise %>% mutate(scan_id_land1 = land1, scan_id_land2 = land2)
+
+blue_pairwise <- left_join(blue_pairwise, blue_gt_land1)
+blue_pairwise <- left_join(blue_pairwise, blue_gt_land2)
+blue_pairwise <- blue_pairwise %>% filter(!is.na(unique_id_land1), !is.na(unique_id_land2))
+
+
+blue_pairwise <- blue_pairwise %>% 
+  mutate(ground_truth = ifelse(unique_id_land1 == unique_id_land2, "Same Source", "Different Source")) %>%
+  separate(col = scan_id_land1, 
+           into = c("barrel_land1", "land_land1", "bullet_land1", 
+                    "operator_land1", "machine_land1", "round_land1"), sep = "-") %>% 
+  separate(col = scan_id_land2, 
+           into = c("barrel_land2", "land_land2", "bullet_land2", 
+                    "operator_land2", "machine_land2", "round_land2"), sep = "-") %>%
+  mutate(bullet_pairing = paste0(bullet_land1, "-", bullet_land2), 
+         operator_pairing = paste0(operator_land1, "-", operator_land2), 
+         machine_pairing = paste0(machine_land1, "-", machine_land2), 
+         unique_id_pairing = paste0(unique_id_land1, "_", unique_id_land2)) 
+
+unique_id_pairings <- c("BL B-1_BL B-1", "BL B-1_BL B-2", "BL B-1_BL B-3", "BL B-1_BL B-4", "BL B-1_BL B-5", "BL B-1_BL B-6",
+                        "BL B-2_BL B-2", "BL B-2_BL B-3", "BL B-2_BL B-4", "BL B-2_BL B-5", "BL B-2_BL B-6", 
+                        "BL B-3_BL B-3", "BL B-3_BL B-4", "BL B-3_BL B-5", "BL B-3_BL B-6",
+                        "BL B-4_BL B-4", "BL B-4_BL B-5", "BL B-4_BL B-6", 
+                        "BL B-5_BL B-5", "BL B-5_BL B-6",
+                        "BL B-6_BL B-6")
+
+bullet_pairings <- c("Bullet 1-Bullet 1", "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", 
+                     "Bullet 2-Bullet 2", "Bullet 2-Bullet 3", "Bullet 3-Bullet 3")
+
+operator_pairings <- c("Anyesha-Anyesha", "Anyesha-Marco","Anyesha-Mark","Anyesha-Mya","Anyesha-Samantha",
+                       "Marco-Marco","Marco-Mark","Marco-Mya","Marco-Samantha",
+                       "Mark-Mark","Mark-Mya","Mark-Samantha",
+                       "Mya-Mya","Mya-Samantha",
+                       "Samantha-Samantha")
+
+machine_pairings <- c("Sneox1-Sneox1", "Sneox1-Sneox2", "Sneox2-Sneox2")
+
+blue_pairwise <- blue_pairwise %>%
+  mutate(bullet_pairing_alt = paste0(bullet_land2, "-", bullet_land1), 
+         operator_pairing_alt = paste0(operator_land2, "-", operator_land1), 
+         machine_pairing_alt = paste0(machine_land2, "-", machine_land1), 
+         unique_id_pairing_alt = paste0(unique_id_land2, "_", unique_id_land1)) %>%
+  mutate(bullet_pairing_fixed = ifelse(bullet_pairing %in% bullet_pairings, bullet_pairing, bullet_pairing_alt), 
+         operator_pairing_fixed = ifelse(operator_pairing %in% operator_pairings, operator_pairing, operator_pairing_alt), 
+         machine_pairing_fixed = ifelse(machine_pairing %in% machine_pairings, machine_pairing, machine_pairing_alt), 
+         unique_id_pairing_fixed = ifelse(unique_id_pairing %in% unique_id_pairings, unique_id_pairing, unique_id_pairing_alt))
+
+model_pairwise_blue <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = blue_pairwise)
+
+model_pairwise_blue_ss <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = blue_pairwise %>% filter(ground_truth == "Same Source"))
+
+model_pairwise_blue_ds <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = blue_pairwise %>% filter(ground_truth == "Different Source"))
+
+model_sigmas_blue <- as.data.frame(VarCorr(model_pairwise_blue))[,c("grp", "sdcor")]
+model_sigmas_blue_ss <- as.data.frame(VarCorr(model_pairwise_blue_ss))[,c("grp", "sdcor")]
+model_sigmas_blue_ds <- as.data.frame(VarCorr(model_pairwise_blue_ds))[,c("grp", "sdcor")]
+model_sigmas_blue <- model_sigmas_blue %>% mutate(model = "All", barrel = "Blue")
+model_sigmas_blue_ss <- model_sigmas_blue_ss %>% mutate(model = "Same Source", barrel = "Blue")
+model_sigmas_blue_ds <- model_sigmas_blue_ds %>% mutate(model = "Different Source", barrel = "Blue")
+```
+
+
+Orange!!! 
+```{r}
+orange_pairwise <- readRDS("/Volumes/databuddy/Variability/data/orange_pairwise_all.rda")
+orange_gt <- read_csv("../data/variability_scans/orange_gt_update.csv")
+
+orange_gt_land1 <- orange_gt %>% mutate(scan_id_land1 = scan_id, unique_id_land1 = unique_id) %>% select(scan_id_land1, unique_id_land1)
+orange_gt_land2 <- orange_gt %>% mutate(scan_id_land2 = scan_id, unique_id_land2 = unique_id) %>% select(scan_id_land2, unique_id_land2)
+
+orange_pairwise <- orange_pairwise %>% mutate(scan_id_land1 = land1, scan_id_land2 = land2)
+
+orange_pairwise <- left_join(orange_pairwise, orange_gt_land1)
+orange_pairwise <- left_join(orange_pairwise, orange_gt_land2)
+orange_pairwise <- orange_pairwise %>% filter(!is.na(unique_id_land1), !is.na(unique_id_land2))
+
+
+orange_pairwise <- orange_pairwise %>% 
+  mutate(ground_truth = ifelse(unique_id_land1 == unique_id_land2, "Same Source", "Different Source")) %>%
+  separate(col = scan_id_land1, 
+           into = c("barrel_land1", "land_land1", "bullet_land1", 
+                    "operator_land1", "machine_land1", "round_land1"), sep = "-") %>% 
+  separate(col = scan_id_land2, 
+           into = c("barrel_land2", "land_land2", "bullet_land2", 
+                    "operator_land2", "machine_land2", "round_land2"), sep = "-") %>%
+  mutate(bullet_pairing = paste0(bullet_land1, "-", bullet_land2), 
+         operator_pairing = paste0(operator_land1, "-", operator_land2), 
+         machine_pairing = paste0(machine_land1, "-", machine_land2), 
+         unique_id_pairing = paste0(unique_id_land1, "_", unique_id_land2)) 
+
+unique_id_pairings <- c("BL O-1_BL O-1", "BL O-1_BL O-2", "BL O-1_BL O-3", "BL O-1_BL O-4", "BL O-1_BL O-5", "BL O-1_BL O-6",
+                        "BL O-2_BL O-2", "BL O-2_BL O-3", "BL O-2_BL O-4", "BL O-2_BL O-5", "BL O-2_BL O-6", 
+                        "BL O-3_BL O-3", "BL O-3_BL O-4", "BL O-3_BL O-5", "BL O-3_BL O-6",
+                        "BL O-4_BL O-4", "BL O-4_BL O-5", "BL O-4_BL O-6", 
+                        "BL O-5_BL O-5", "BL O-5_BL O-6",
+                        "BL O-6_BL O-6")
+
+bullet_pairings <- c("Bullet 1-Bullet 1", "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", 
+                     "Bullet 2-Bullet 2", "Bullet 2-Bullet 3", "Bullet 3-Bullet 3")
+
+operator_pairings <- c("Allison-Allison", "Allison-Anyesha","Allison-Carley","Allison-Connor","Allison-Marco","Allison-Mark","Allison-Mya","Allison-Samantha",
+                       "Anyesha-Anyesha","Anyesha-Carley","Anyesha-Connor","Anyesha-Marco","Anyesha-Mark","Anyesha-Mya","Anyesha-Samantha",
+                       "Carley-Carley", "Carley-Connor", "Carley-Marco","Carley-Mark", "Carley-Mya", "Carley-Samantha",
+                       "Connor-Connor", "Connor-Marco", "Connor-Mark", "Connor-Mya", "Connor-Samantha",
+                       "Marco-Marco", "Marco-Mark", "Marco-Mya", "Marco-Samantha",
+                       "Mark-Mark","Mark-Mya","Mark-Samantha",
+                       "Mya-Mya","Mya-Samantha",
+                       "Samantha-Samantha")
+
+machine_pairings <- c("Sneox1-Sneox1", "Sneox1-Sneox2", "Sneox2-Sneox2")
+
+orange_pairwise <- orange_pairwise %>%
+  mutate(bullet_pairing_alt = paste0(bullet_land2, "-", bullet_land1), 
+         operator_pairing_alt = paste0(operator_land2, "-", operator_land1), 
+         machine_pairing_alt = paste0(machine_land2, "-", machine_land1), 
+         unique_id_pairing_alt = paste0(unique_id_land2, "_", unique_id_land1)) %>%
+  mutate(bullet_pairing_fixed = ifelse(bullet_pairing %in% bullet_pairings, bullet_pairing, bullet_pairing_alt), 
+         operator_pairing_fixed = ifelse(operator_pairing %in% operator_pairings, operator_pairing, operator_pairing_alt), 
+         machine_pairing_fixed = ifelse(machine_pairing %in% machine_pairings, machine_pairing, machine_pairing_alt), 
+         unique_id_pairing_fixed = ifelse(unique_id_pairing %in% unique_id_pairings, unique_id_pairing, unique_id_pairing_alt))
+
+model_pairwise_orange <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = orange_pairwise)
+
+model_pairwise_orange_ss <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = orange_pairwise %>% filter(ground_truth == "Same Source"))
+
+model_pairwise_orange_ds <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = orange_pairwise %>% filter(ground_truth == "Different Source"))
+
+model_sigmas_orange <- as.data.frame(VarCorr(model_pairwise_orange))[,c("grp", "sdcor")]
+model_sigmas_orange_ss <- as.data.frame(VarCorr(model_pairwise_orange_ss))[,c("grp", "sdcor")]
+model_sigmas_orange_ds <- as.data.frame(VarCorr(model_pairwise_orange_ds))[,c("grp", "sdcor")]
+model_sigmas_orange <- model_sigmas_orange %>% mutate(model = "All", barrel = "Orange")
+model_sigmas_orange_ss <- model_sigmas_orange_ss %>% mutate(model = "Same Source", barrel = "Orange")
+model_sigmas_orange_ds <- model_sigmas_orange_ds %>% mutate(model = "Different Source", barrel = "Orange")
+```
+
+
+
+
+
+
+
+Pink!!! 
+```{r}
+pink_pairwise <- readRDS("/Volumes/databuddy/Variability/data/pink_pairwise_all.rda")
+pink_gt <- read_csv("../data/variability_scans/pink_gt_update.csv")
+
+pink_gt_land1 <- pink_gt %>% mutate(scan_id_land1 = scan_id, unique_id_land1 = unique_id) %>% select(scan_id_land1, unique_id_land1)
+pink_gt_land2 <- pink_gt %>% mutate(scan_id_land2 = scan_id, unique_id_land2 = unique_id) %>% select(scan_id_land2, unique_id_land2)
+
+pink_pairwise <- pink_pairwise %>% mutate(scan_id_land1 = land1, scan_id_land2 = land2)
+
+pink_pairwise <- left_join(pink_pairwise, pink_gt_land1)
+pink_pairwise <- left_join(pink_pairwise, pink_gt_land2)
+pink_pairwise <- pink_pairwise %>% filter(!is.na(unique_id_land1), !is.na(unique_id_land2))
+
+
+pink_pairwise <- pink_pairwise %>% 
+  mutate(ground_truth = ifelse(unique_id_land1 == unique_id_land2, "Same Source", "Different Source")) %>%
+  separate(col = scan_id_land1, 
+           into = c("barrel_land1", "land_land1", "bullet_land1", 
+                    "operator_land1", "machine_land1", "round_land1"), sep = "-") %>% 
+  separate(col = scan_id_land2, 
+           into = c("barrel_land2", "land_land2", "bullet_land2", 
+                    "operator_land2", "machine_land2", "round_land2"), sep = "-") %>%
+  mutate(bullet_pairing = paste0(bullet_land1, "-", bullet_land2), 
+         operator_pairing = paste0(operator_land1, "-", operator_land2), 
+         machine_pairing = paste0(machine_land1, "-", machine_land2), 
+         unique_id_pairing = paste0(unique_id_land1, "_", unique_id_land2)) 
+
+unique_id_pairings <- c("BL P-1_BL P-1", "BL P-1_BL P-2", "BL P-1_BL P-3", "BL P-1_BL P-4", "BL P-1_BL P-5", "BL P-1_BL P-6",
+                        "BL P-2_BL P-2", "BL P-2_BL P-3", "BL P-2_BL P-4", "BL P-2_BL P-5", "BL P-2_BL P-6", 
+                        "BL P-3_BL P-3", "BL P-3_BL P-4", "BL P-3_BL P-5", "BL P-3_BL P-6",
+                        "BL P-4_BL P-4", "BL P-4_BL P-5", "BL P-4_BL P-6", 
+                        "BL P-5_BL P-5", "BL P-5_BL P-6",
+                        "BL P-6_BL P-6")
+
+bullet_pairings <- c("Bullet 1-Bullet 1", "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", 
+                     "Bullet 2-Bullet 2", "Bullet 2-Bullet 3", "Bullet 3-Bullet 3")
+
+operator_pairings <- c("Allison-Allison", "Allison-Anyesha","Allison-Carley","Allison-Connor","Allison-Marco","Allison-Mark","Allison-Mya","Allison-Samantha",
+                       "Anyesha-Anyesha","Anyesha-Carley","Anyesha-Connor","Anyesha-Marco","Anyesha-Mark","Anyesha-Mya","Anyesha-Samantha",
+                       "Carley-Carley", "Carley-Connor", "Carley-Marco","Carley-Mark", "Carley-Mya", "Carley-Samantha",
+                       "Connor-Connor", "Connor-Marco", "Connor-Mark", "Connor-Mya", "Connor-Samantha",
+                       "Marco-Marco", "Marco-Mark", "Marco-Mya", "Marco-Samantha",
+                       "Mark-Mark","Mark-Mya","Mark-Samantha",
+                       "Mya-Mya","Mya-Samantha",
+                       "Samantha-Samantha")
+
+machine_pairings <- c("Sneox1-Sneox1", "Sneox1-Sneox2", "Sneox2-Sneox2")
+
+pink_pairwise <- pink_pairwise %>%
+  mutate(bullet_pairing_alt = paste0(bullet_land2, "-", bullet_land1), 
+         operator_pairing_alt = paste0(operator_land2, "-", operator_land1), 
+         machine_pairing_alt = paste0(machine_land2, "-", machine_land1), 
+         unique_id_pairing_alt = paste0(unique_id_land2, "_", unique_id_land1)) %>%
+  mutate(bullet_pairing_fixed = ifelse(bullet_pairing %in% bullet_pairings, bullet_pairing, bullet_pairing_alt), 
+         operator_pairing_fixed = ifelse(operator_pairing %in% operator_pairings, operator_pairing, operator_pairing_alt), 
+         machine_pairing_fixed = ifelse(machine_pairing %in% machine_pairings, machine_pairing, machine_pairing_alt), 
+         unique_id_pairing_fixed = ifelse(unique_id_pairing %in% unique_id_pairings, unique_id_pairing, unique_id_pairing_alt))
+
+model_pairwise_pink <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = pink_pairwise)
+
+model_pairwise_pink_ss <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = pink_pairwise %>% filter(ground_truth == "Same Source"))
+
+model_pairwise_pink_ds <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = pink_pairwise %>% filter(ground_truth == "Different Source"))
+
+model_sigmas_pink <- as.data.frame(VarCorr(model_pairwise_pink))[,c("grp", "sdcor")]
+model_sigmas_pink_ss <- as.data.frame(VarCorr(model_pairwise_pink_ss))[,c("grp", "sdcor")]
+model_sigmas_pink_ds <- as.data.frame(VarCorr(model_pairwise_pink_ds))[,c("grp", "sdcor")]
+model_sigmas_pink <- model_sigmas_pink %>% mutate(model = "All", barrel = "Pink")
+model_sigmas_pink_ss <- model_sigmas_pink_ss %>% mutate(model = "Same Source", barrel = "Pink")
+model_sigmas_pink_ds <- model_sigmas_pink_ds %>% mutate(model = "Different Source", barrel = "Pink")
+
+
+model_sigmas_all <- rbind(model_sigmas_orange, model_sigmas_orange_ss, model_sigmas_orange_ds, 
+                          model_sigmas_blue, model_sigmas_blue_ss, model_sigmas_blue_ds, 
+                          model_sigmas_pink, model_sigmas_pink_ss, model_sigmas_pink_ds)
+
+model_sigmas_all <-model_sigmas_all %>%
+  mutate(grp = factor(grp, levels = c("bullet_pairing_fixed:unique_id_pairing_fixed",
+                                      "operator_pairing_fixed:unique_id_pairing_fixed",
+                                      "machine_pairing_fixed:unique_id_pairing_fixed", 
+                                      "bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed",
+                                      "bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed",
+                                      "operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed",
+                                      "bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed", 
+                                      "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual")), 
+         sdcor = round(sdcor, 5))
+
+write_csv(model_sigmas_all, "/Volumes/databuddy/Variability/data/pairwise_model_results_all.csv")
+
+model_sigmas_all %>%
+  mutate(grp = factor(grp, levels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual"))) %>%
+  ggplot() + 
+  geom_point(aes(x = grp, y = sdcor, color = model, pch = model), size = 3) + 
+  facet_wrap(~barrel, nrow = 3, scales = "free_y") + 
+  scale_color_manual(name = "Pairing IDs Used", values = c("goldenrod", "grey60", "midnightblue")) + 
+  scale_shape_manual(name = "Pairing IDs Used", values = c(8, 17, 15)) + 
+  theme_bw()
+model_sigmas_all  %>%
+  mutate(grp = factor(grp, levels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual"))) %>% arrange(barrel, model, grp)
+```
+Two model variations to try: 
+
+1. Models without tank rash lands for Orange and Pink.  
+
+```{r}
+model_sigmas_all <- read_csv("/Volumes/databuddy/Variability/data/pairwise_model_results_all.csv")
+model_sigmas_all$tank_rash <- "included"
+model_pairwise_orange_TR <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = orange_pairwise %>% 
+                              filter(unique_id_land1 != "BL O-6", 
+                                     unique_id_land2 != "BL O-6"))
+
+model_pairwise_orange_ss_TR <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = orange_pairwise %>% 
+                              filter(ground_truth == "Same Source",
+                                     unique_id_land1 != "BL O-6", 
+                                     unique_id_land2 != "BL O-6"))
+
+model_pairwise_orange_ds_TR <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = orange_pairwise %>% 
+                              filter(ground_truth == "Different Source",
+                                     unique_id_land1 != "BL O-6", 
+                                     unique_id_land2 != "BL O-6"))
+
+model_sigmas_orange_TR <- as.data.frame(VarCorr(model_pairwise_orange_TR))[,c("grp", "sdcor")]
+model_sigmas_orange_ss_TR <- as.data.frame(VarCorr(model_pairwise_orange_ss_TR))[,c("grp", "sdcor")]
+model_sigmas_orange_ds_TR <- as.data.frame(VarCorr(model_pairwise_orange_ds_TR))[,c("grp", "sdcor")]
+model_sigmas_orange_TR <- model_sigmas_orange_TR %>% mutate(model = "All", barrel = "Orange", tank_rash = "filtered")
+model_sigmas_orange_ss_TR <- model_sigmas_orange_ss_TR %>% mutate(model = "Same Source", barrel = "Orange", tank_rash = "filtered")
+model_sigmas_orange_ds_TR <- model_sigmas_orange_ds_TR %>% mutate(model = "Different Source", barrel = "Orange", tank_rash = "filtered")
+
+
+model_pairwise_pink_TR <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = pink_pairwise %>% 
+                              filter(unique_id_land1 != "BL P-6", 
+                                     unique_id_land2 != "BL P-6"))
+
+model_pairwise_pink_ss_TR <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = pink_pairwise %>% 
+                              filter(ground_truth == "Same Source",
+                                     unique_id_land1 != "BL P-6", 
+                                     unique_id_land2 != "BL P-6"))
+
+model_pairwise_pink_ds_TR <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = pink_pairwise %>% 
+                              filter(ground_truth == "Different Source",
+                                     unique_id_land1 != "BL P-6", 
+                                     unique_id_land2 != "BL P-6"))
+
+model_sigmas_pink_TR <- as.data.frame(VarCorr(model_pairwise_pink_TR))[,c("grp", "sdcor")]
+model_sigmas_pink_ss_TR <- as.data.frame(VarCorr(model_pairwise_pink_ss_TR))[,c("grp", "sdcor")]
+model_sigmas_pink_ds_TR <- as.data.frame(VarCorr(model_pairwise_pink_ds_TR))[,c("grp", "sdcor")]
+model_sigmas_pink_TR <- model_sigmas_pink_TR %>% mutate(model = "All", barrel = "Pink", tank_rash = "filtered")
+model_sigmas_pink_ss_TR <- model_sigmas_pink_ss_TR %>% mutate(model = "Same Source", barrel = "Pink", tank_rash = "filtered")
+model_sigmas_pink_ds_TR <- model_sigmas_pink_ds_TR %>% mutate(model = "Different Source", barrel = "Pink", tank_rash = "filtered")
+
+
+model_sigmas_TR <- rbind(model_sigmas_orange_TR, model_sigmas_orange_ss_TR, model_sigmas_orange_ds_TR, 
+                          model_sigmas_pink_TR, model_sigmas_pink_ss_TR, model_sigmas_pink_ds_TR)
+
+
+model_sigmas_TR <-model_sigmas_TR %>%
+  mutate(grp = factor(grp, levels = c("bullet_pairing_fixed:unique_id_pairing_fixed",
+                                      "operator_pairing_fixed:unique_id_pairing_fixed",
+                                      "machine_pairing_fixed:unique_id_pairing_fixed", 
+                                      "bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed",
+                                      "bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed",
+                                      "operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed",
+                                      "bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed", 
+                                      "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual")), 
+         sdcor = round(sdcor, 5))
+
+model_sigmas_all_2 <- rbind(model_sigmas_all, model_sigmas_TR)
+
+
+model_sigmas_all_2 %>%
+  mutate(grp = factor(grp, levels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual"))) %>%
+  ggplot() + 
+  geom_point(aes(x = grp, y = sdcor, color = model, pch = model), size = 3) + 
+  facet_grid(barrel~tank_rash, scale = "free_y") + 
+  scale_color_manual(name = "Pairing IDs Used", values = c("goldenrod", "grey60", "midnightblue")) + 
+  scale_shape_manual(name = "Pairing IDs Used", values = c(8, 17, 15)) + 
+  theme_bw()
+```
+2. Models with 10% of comparisons (randomly sampled) so that we can try for confidence intervals.  
+
+
+
+
+
+Confidence Intervals. 
+```{r}
+# blue_ss_boot_ci <- confint(model_pairwise_blue_ss, parm = "theta_", level = 0.95, method = "boot")
+# blue_ds_boot_ci <- confint(model_pairwise_blue_ds, parm = "theta_", level = 0.95, method = "boot")
+# blue_boot_ci <- confint(model_pairwise_blue, parm = "theta_", level = 0.95, method = "boot")
+# 
+# orange_ss_boot_ci <- confint(model_pairwise_orange_ss, parm = "theta_", level = 0.95, method = "boot")
+# orange_ds_boot_ci <- confint(model_pairwise_orange_ds, parm = "theta_", level = 0.95, method = "boot")
+# orange_boot_ci <- confint(model_pairwise_orange, parm = "theta_", level = 0.95, method = "boot")
+# 
+# pink_ss_boot_ci <- confint(model_pairwise_pink_ss, parm = "theta_", level = 0.95, method = "boot")
+# pink_ds_boot_ci <- confint(model_pairwise_pink_ds, parm = "theta_", level = 0.95, method = "boot")
+# pink_boot_ci <- confint(model_pairwise_pink, parm = "theta_", level = 0.95, method = "boot")
+# 
+
+```
+
+```{r}
+all_pairwise <- rbind(orange_pairwise, pink_pairwise, blue_pairwise)
+all_pairwise %>% 
+  ggplot() + 
+  geom_histogram(aes(x = rfscore, fill = factor(barrel_land1)), color = "black") + 
+  theme_bw() + 
+  facet_wrap(~barrel_land1, nrow = 3) + 
+  labs(x = "Random Forest Similarity Score", y = "Frequency", 
+       title = "Distribution of Pairwise Similarity Scores by Barrel") + 
+  scale_fill_manual(name = "", 
+                    breaks = c("Barrel Blue", "Barrel Orange", "Barrel Pink"), 
+                    values = c("steelblue", "darkorange", "salmon")) + 
+  theme(legend.position = 'none')
+```
+
+```{r}
+all_pairwise_viz <- all_pairwise %>% 
+  select(land1, land2, pairing_id, rfscore, ground_truth, barrel_land1,
+         bullet_pairing_fixed, operator_pairing_fixed, 
+         machine_pairing_fixed, unique_id_pairing_fixed)
+
+all_pairwise_viz <- all_pairwise_viz %>% 
+  mutate(operator_pairing_fixed = factor(operator_pairing_fixed, 
+                                         levels =  c("Allison-Allison","Allison-Anyesha","Allison-Carley",
+                                                     "Allison-Connor","Allison-Mya","Allison-Marco","Allison-Mark",
+                                                     "Allison-Samantha",
+                                                     "Anyesha-Anyesha","Anyesha-Carley","Anyesha-Connor","Anyesha-Mya",
+                                                     "Anyesha-Marco","Anyesha-Mark","Anyesha-Samantha",
+                       "Carley-Carley", "Carley-Connor", "Carley-Mya", "Carley-Marco","Carley-Mark", 
+                       "Carley-Samantha",
+                       "Connor-Connor", "Connor-Mya","Connor-Marco", "Connor-Mark", "Connor-Samantha",
+                       "Marco-Marco", "Marco-Mark", 
+                       "Marco-Mya", "Marco-Samantha", 
+                       "Mark-Mark","Mark-Mya","Mark-Samantha",
+                       "Mya-Mya","Mya-Samantha", "Samantha-Samantha"), 
+                       labels = c("A-A", "A-B", "A-C", "A-D", "A-E", "A-F", "A-G", "A-H", 
+                                  "B-B", "B-C", "B-D", "B-E", "B-F", "B-G", "B-H", 
+                                  "C-C", "C-D", "C-E", "C-F", "C-G", "C-H", 
+                                  "D-D", "D-E", "D-F", "D-G", "D-H", 
+                                  "F-F", "F-G", "F-E", "F-H", 
+                                  "G-G", "G-E", "G-H", 
+                                  "E-E", "E-H", 
+                                  "H-H")))
+
+```
+
+```{r}
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore, fill = ground_truth), outlier.alpha = 0.15) + 
+  scale_fill_manual(name = "Pairing ID \nGround Truth", breaks = c("Same Source", "Different Source"), 
+                    values = c("steelblue", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Blue Pairwise Similarity Score Distributions", 
+       subtitle = " by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+# 500 by 650
+  
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore_shift, fill = ground_truth), outlier.alpha = 0.15) + 
+  scale_fill_manual(name = "Pairing ID \nGround Truth", breaks = c("Same Source", "Different Source"), 
+                    values = c("steelblue", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Blue Pairwise Similarity Score Distributions", 
+       subtitle = " centered by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+
+
+### colored by bullet pairing
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore, fill = factor(bullet_pairing_fixed)), outlier.alpha = 0) + 
+  scale_fill_manual(name = "Pairing ID", breaks = c("Bullet 1-Bullet 1", "Bullet 2-Bullet 2", "Bullet 3-Bullet 3", 
+                                                    "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3"), 
+                    values = c(blue_bullets_palette, "lightgoldenrod", "goldenrod2", "darkgoldenrod4")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Blue Pairwise Similarity Score Distributions", 
+       subtitle = " by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+# 500 by 650
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source")), 
+         bullet_pairing_fixed = factor(bullet_pairing_fixed, 
+                                       levels = rev(c("Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3", 
+                                                   "Bullet 3-Bullet 3", "Bullet 2-Bullet 2","Bullet 1-Bullet 1")))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore_shift, fill = factor(bullet_pairing_fixed)), outlier.alpha = 0.05) + 
+  scale_fill_manual(name = "Pairing ID", breaks = c("Bullet 1-Bullet 1", "Bullet 2-Bullet 2", "Bullet 3-Bullet 3", 
+                                                    "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3"), 
+                    values = c(blue_bullets_palette, "lightgoldenrod", "goldenrod2", "darkgoldenrod4")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(bullet_pairing_fixed~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Blue Pairwise Similarity Score Distributions", 
+       subtitle = " centered by Barrel-Land Pairing, split by Bullet Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+# 500 by 650
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source")), 
+         machine_pairing_fixed = factor(machine_pairing_fixed, levels = c("Sneox1-Sneox2", "Sneox2-Sneox2", "Sneox1-Sneox1"))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore_shift, fill = factor(machine_pairing_fixed)), outlier.alpha = 0.05) + 
+  scale_fill_manual(name = "Pairing ID", breaks = c("Sneox1-Sneox1", "Sneox2-Sneox2", "Sneox1-Sneox2"), 
+                    values = c(blue_bullets_palette[3], "goldenrod2", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Blue Pairwise Similarity Score Distributions", 
+       subtitle = " by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+# 500 by 650
+
+
+```
+
+```{r}
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Orange") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore, fill = ground_truth), outlier.alpha = 0.15) + 
+  scale_fill_manual(name = "Pairing ID \nGround Truth", breaks = c("Same Source", "Different Source"), 
+                    values = c("darkorange", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel OrangePairwise Similarity Score Distributions", 
+       subtitle = " by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+# 500 by 650
+  
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Orange") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore_shift, fill = ground_truth), outlier.alpha = 0.15) + 
+  scale_fill_manual(name = "Pairing ID \nGround Truth", breaks = c("Same Source", "Different Source"), 
+                    values = c("darkorange", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Orange Pairwise Similarity Score Distributions", 
+       subtitle = " centered by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Orange") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source")), 
+         bullet_pairing_fixed = factor(bullet_pairing_fixed, 
+                                       levels = rev(c("Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3", 
+                                                   "Bullet 3-Bullet 3", "Bullet 2-Bullet 2","Bullet 1-Bullet 1")))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  filter(ground_truth == "Same Source") %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = bullet_pairing_fixed, y = rfscore, fill = factor(bullet_pairing_fixed)), outlier.alpha = 0.05) + 
+  scale_fill_manual(name = "Pairing ID", breaks = c("Bullet 1-Bullet 1", "Bullet 2-Bullet 2", "Bullet 3-Bullet 3", 
+                                                    "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3"), 
+                    values = c(orange_bullets_palette, "lightgoldenrod", "goldenrod2", "darkgoldenrod4")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(unique_id_pairing_fixed~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Orange Pairwise Similarity Score Distributions", 
+       subtitle = " centered by Barrel-Land Pairing, split by Bullet Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Pink") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore, fill = ground_truth), outlier.alpha = 0.15) + 
+  scale_fill_manual(name = "Pairing ID \nGround Truth", breaks = c("Same Source", "Different Source"), 
+                    values = c("salmon", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel OrangePairwise Similarity Score Distributions", 
+       subtitle = " by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+# 500 by 650
+  
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Pink") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source"))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = unique_id_pairing_fixed, y = rfscore_shift, fill = ground_truth), outlier.alpha = 0.15) + 
+  scale_fill_manual(name = "Pairing ID \nGround Truth", breaks = c("Same Source", "Different Source"), 
+                    values = c("salmon", "grey60")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(ground_truth~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Orange Pairwise Similarity Score Distributions", 
+       subtitle = " centered by Barrel-Land Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Pink") %>%
+  mutate(ground_truth = factor(ground_truth, levels = c("Same Source", "Different Source")), 
+         bullet_pairing_fixed = factor(bullet_pairing_fixed, 
+                                       levels = rev(c("Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3", 
+                                                   "Bullet 3-Bullet 3", "Bullet 2-Bullet 2","Bullet 1-Bullet 1")))) %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>% 
+  filter(ground_truth == "Same Source") %>%
+  ungroup() %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 3) + 
+  geom_boxplot(aes(x = bullet_pairing_fixed, y = rfscore, fill = factor(bullet_pairing_fixed)), outlier.alpha = 0.05) + 
+  scale_fill_manual(name = "Pairing ID", breaks = c("Bullet 1-Bullet 1", "Bullet 2-Bullet 2", "Bullet 3-Bullet 3", 
+                                                    "Bullet 1-Bullet 2", "Bullet 1-Bullet 3", "Bullet 2-Bullet 3"), 
+                    values = c(pink_bullets_palette, "lightgoldenrod", "goldenrod2", "darkgoldenrod4")) + 
+  coord_flip() + 
+  theme_bw() +   
+  facet_grid(unique_id_pairing_fixed~.,scale = "free", space = "free_y") + 
+  labs(x = "Barrel-Land Pairing ID", y = "Pairwise Similarity Score", 
+       title = "Barrel Pink Pairwise Similarity Score Distributions", 
+       subtitle = " centered by Barrel-Land Pairing, split by Bullet Pairing") + 
+  theme(plot.subtitle = element_text(face = "italic"), legend.position = 'none')
+
+```
+
+FIND POTENTIAL TANK RASH SCANS AND VISUALIZE
+
+```{r}
+# first, most egregious: orange land 6, bullets 2 and 3.
+o6_bullets <- all_aligned %>% 
+  filter(unique_id == "BL O-6", operator == "Allison", round == "Round 1", machine == "Sneox1") %>% pull(source)
+
+o4_bullets <- all_aligned %>% 
+  filter(unique_id == "BL O-4", operator == "Allison", round == "Round 1", machine == "Sneox1") %>% pull(source)
+
+o1_bullets <- all_aligned %>% 
+  filter(unique_id == "BL O-1", operator == "Allison", round == "Round 1", machine == "Sneox1") %>% pull(source)
+
+orange_bullets <- data.frame(source = c(o6_bullets, o4_bullets, o1_bullets), 
+                             unique_id = rep(c("BL O-6", "BL O-4", "BL O-1"), each = 3), 
+                             barrel = "Barrel Orange")
+
+orange_bullets
+
+
+# next, barrel pink lands 2 and 6
+p6_bullets <- all_aligned %>% 
+  filter(unique_id == "BL P-6", operator == "Allison", round == "Round 1", machine == "Sneox1") %>% pull(source)
+
+p2_bullets <- all_aligned %>% 
+  filter(unique_id == "BL P-2", operator == "Allison", round == "Round 1", machine == "Sneox1") %>% pull(source)
+
+pink_bullets <- data.frame(source = c(p6_bullets,p2_bullets), 
+                             unique_id = rep(c("BL P-6", "BL P-2"), each = 3), 
+                           barrel = "Barrel Pink")
+
+tank_rash_bullets <- rbind(orange_bullets, pink_bullets)
+tank_rash_bullets <- tank_rash_bullets %>% mutate(source = purrr::map_chr(source, .f = function(x) str_replace(x, "//", "/")))
+write_csv(tank_rash_bullets, "../data/variability_scans/tank_rash_bullets.csv")
+```
+
+
+
+```{r}
+
+
+
+
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>%  
+  ungroup() %>%
+  #pivot_longer(cols = c(rfscore, rfscore_shift), names_to = "rfscore_type", values_to = "rfscore_val") %>%
+  ggplot() + 
+  geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(unique_id_pairing_fixed)), alpha = 0.5) + 
+  #coord_flip() + 
+  #facet_wrap(~rfscore_type, nrow = 2) + 
+    #geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(operator_pairing_fixed)), alpha = 0.5) + 
+  #facet_grid(bullet_pairing_fixed~unique_id_pairing_fixed) + 
+  theme_bw() + 
+  labs(x = "Barrel-Land Pairing ID", y = "Centered Pairwise Similarity Score", 
+       title = "Pairwise Similarity Score Distributions by Barrel-Land Pairing", 
+       subtitle = "Barrel Blue")
+
+
+all_pairwise_viz %>% 
+  filter(barrel_land1 == "Barrel Blue") %>%
+  group_by(unique_id_pairing_fixed) %>%
+  mutate(rfscore_shift = rfscore - mean(rfscore)) %>%  
+  ungroup() %>%
+  #pivot_longer(cols = c(rfscore, rfscore_shift), names_to = "rfscore_type", values_to = "rfscore_val") %>%
+  ggplot() + 
+  geom_density(aes(x = rfscore_shift, y = ..scaled.., fill = factor(unique_id_pairing_fixed)), alpha = 0.5) + 
+  #coord_flip() + 
+  #facet_wrap(~rfscore_type, nrow = 2) + 
+    #geom_density(aes(x = rfscore, y = ..scaled.., fill = factor(operator_pairing_fixed)), alpha = 0.5) + 
+  #facet_grid(bullet_pairing_fixed~unique_id_pairing_fixed) + 
+  theme_bw()
+  
+```
+
+
+## Other visualizations
+
+
+```{r}
+lands <- c("Land 1", "Land 2", "Land 3", "Land 4", "Land 5", "Land 6")
+
+true_pairs <- c("Land 1-Land 1", "Land 2-Land 2", "Land 3-Land 3", "Land 4-Land 4", "Land 5-Land 5", "Land 6-Land 6")
+doublescan_type1 <- c("Land 1-Land 1", "Land 2-Land 2", "Land 3-Land 2", "Land 4-Land 4", "Land 5-Land 5", "Land 6-Land 6")
+doublescan_type2 <- c("Land 1-Land 1", "Land 2-Land 2", "Land 3-Land 3", "Land 4-Land 2", "Land 5-Land 5", "Land 6-Land 6")
+
+bullet_grid <- expand.grid(scan_labels = lands, scan_truth = lands)
+bullet_grid %>%
+  mutate(scan_pairs = paste0(scan_labels, "-", scan_truth), 
+         scan_normal = ifelse(scan_pairs %in% true_pairs, 1, 0), 
+         scan_type1 = ifelse(scan_pairs %in% doublescan_type1, 1, 0), 
+         scan_type2 = ifelse(scan_pairs %in% doublescan_type2, 1, 0)) %>%
+  pivot_longer(scan_normal:scan_type2, names_to = "scan_type", values_to = "plot_key") %>%
+  mutate(scan_type = factor(scan_type, levels = c("scan_normal", "scan_type1", "scan_type2"), 
+                            labels = c("Correct Scan Sequence", "Double Scan Error Type 1", "Double Scan Error Type 2"))) %>%
+  ggplot() +
+  geom_tile(aes(x = scan_labels, y = scan_truth, color = factor(plot_key), fill = factor(plot_key)), size = .7) +
+  scale_color_manual(name = "", breaks = c("0", "1"), values = c(NA, "black")) +
+  scale_fill_manual(name = "", breaks = c("0", "1"), values = c(NA, "grey70")) + 
+  facet_wrap(~scan_type, nrow = 1) + 
+  theme_bw() + 
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20), legend.position = 'none') + 
+    labs(x = "Scan Label", y = "Scan Truth")
+```
+
+
+```{r}
+all_aligned %>% 
+  mutate(barrel = factor(barrel, levels = c("Barrel Pink", "Barrel Orange", "Barrel Blue"))) %>% 
+  ggplot() + 
+  geom_bar(aes(x = barrel, fill = factor(ten_x_setting)), color = "black", alpha = 0.85) + 
+  theme_bw() + 
+  scale_fill_manual(name = "x10 setting present\nin file name", 
+                    breaks = c(TRUE, FALSE), values = c("goldenrod2", "grey80")) + 
+  facet_wrap(~operator_code, nrow = 2) + coord_flip() + 
+  labs(title = "x10 setting use on scans", subtitle = "by operator and barrel") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+
+subsample_sigs_machine_settings <- function(sig_aligned_data, n_phases, window_size){
+  x_vals <- data.frame(x_aligned = unique(sig_aligned_data[,"x_aligned"]), phase_id = NA)
+  jump <- window_size/n_phases
+  sample_size <- floor(nrow(x_vals)/window_size)
+  #phase_ids <- list(length = n_phases)
+  for(i in 1:n_phases){
+    phase_ids <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    #phase_ids[[i]] <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+    x_vals <- x_vals %>% mutate(phase_id = ifelse(x_aligned %in% phase_ids, i, phase_id))
+  }
+
+  
+  dat_phased <- left_join(sig_aligned_data, x_vals)
+  dat_nest <- dat_phased %>%
+    filter(!is.na(phase_id)) %>%
+    group_by(unique_id, phase_id) %>%
+    nest() %>%
+    mutate(models = lapply(data, function(df) lmer(sig2~fixed_BLi + (1|bullet:fixed_BLi) +
+                                                     (1|operator:fixed_BLi) + (1|machine:fixed_BLi) + 
+                                                     (1|scan_setting:fixed_BLi) + 
+                                                     (1|bullet:operator:fixed_BLi) + (1|bullet:machine:fixed_BLi) + 
+                                                     (1|operator:machine:fixed_BLi) + 
+                                                     (1|operator:bullet:machine:fixed_BLi), 
+                      data = df, 
+                      REML = T,
+                      control = lmerControl(check.conv.grad = .makeCC("warning", tol = 0.1), 
+                                             check.conv.singular = .makeCC("message", tol = 0.0000001)))), 
+         sigmas = lapply(models, function(model) as.data.frame(VarCorr(model))[,c("grp", "sdcor")])) %>%
+    select(unique_id, phase_id, sigmas)
+  
+  
+  return(dat_nest)
+}
+
+
+all_aligned_long2 <- all_aligned_long %>% 
+  mutate(scan_setting = ifelse(str_detect(source, "x10") == T, "x10", "non-x10"))
+pink_l4_long2 <- all_aligned_long2 %>%  ### 8 singular
+  filter(unique_id == "BL P-4", keep_x == T) %>%
+  mutate(fixed_BLi = paste0(unique_id, "-", x_aligned))
+
+pink_l4_df2 <- data.frame(window_size = 100) %>%
+  mutate(sampling_ests = purrr::map(.x = window_size, .f = function(x){
+    subsample_sigs_machine_settings(sig_aligned_data = pink_l4_long2, n_phases = 10, window_size = x)
+  })) %>% 
+  unnest(cols = c(sampling_ests)) %>% 
+  unnest(cols = c(sigmas))
+
+#orange_df <- rbind(orange_l1_df, orange_l2_df, orange_l3_df, orange_l4_df, orange_l5_df, orange_l6_df, orange_pooled_df)
+
+pink_l4_df2 <- pink_l4_df2 %>%
+  mutate(grp = factor(grp, levels = c("bullet:fixed_BLi", "operator:fixed_BLi", 
+                                      "machine:fixed_BLi", "scan_setting:fixed_BLi", "bullet:operator:fixed_BLi", 
+                                      "bullet:machine:fixed_BLi", "operator:machine:fixed_BLi", 
+                                      "operator:bullet:machine:fixed_BLi", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", "Scan Setting",
+                                 "Bullet-Operator", "Bullet-Machine", "Operator-Machine", 
+                                 "Operator-Bullet-Machine", "Residual")))
+
+write_csv(orange_df, "/Volumes/databuddy/Variability/data/orange_signature_model_results.csv")
+
+pink_l4_df2 %>%
+  ggplot() + 
+  geom_boxplot(aes(x = factor(unique_id), y = sdcor), fill = "darkorange", alpha = 0.7) + 
+  #geom_point(aes(x = factor(unique_id), y = sdcor, color = factor(phase_id)), alpha = 0.6) + 
+  #scale_color_manual(name = "Phase", values = zissou_palette10) + 
+  facet_wrap(~grp,  nrow = 2) + 
+  theme_bw() + 
+  labs(x = "Barrel-Land", y = "Estimated sigma value", 
+       title = "Barrel Orange Signature-Level Model Parameter Estimates", 
+       subtitle = "window size = 100, phases = 10") + 
+  theme(plot.subtitle = element_text(face = "italic"))
+
+pink_l4_df2 %>% group_by(grp) %>% summarise(sigma = round(mean(sdcor),5), sigma_min = round(min(sdcor),5), sigma_max = round(max(sdcor), 5))
+
+
+```
+
+
+
+
+
+Subsampling modeling visualizations 
+
+```{r}
+# need an n_phases, window_size, and "sig_aligned_data"!
+
+# we will use "barrel blue, land 6 as our example! 
+
+subsample_example <- "BL B-6"
+n_phases <- 10
+window_size <- 100
+
+sig_aligned_data <-  all_aligned_long %>% 
+  filter(unique_id == "BL B-6") %>%
+  filter(keep_x == T)
+x_vals <- data.frame(x_aligned = unique(sig_aligned_data[,"x_aligned"]), phase_id = NA)
+
+jump <- window_size/n_phases
+sample_size <- floor(nrow(x_vals)/window_size)
+min_x <- min(x_vals$x_aligned)
+#phase_ids <- list(length = n_phases)
+for(i in 1:n_phases){
+  phase_ids <- seq(min_x+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+  #phase_ids[[i]] <- seq(1+(jump*(i-1)), max(x_vals$x_aligned), by = window_size)
+  x_vals <- x_vals %>% mutate(phase_id = ifelse(x_aligned %in% phase_ids, i, phase_id))
+}
+
+  
+dat_phased <- left_join(sig_aligned_data, x_vals)
+
+#paste0("\u2113", " + ", 2, "w"),
+label_list <- c("\u2113", paste0("\u2113", " + w"), paste0("\u2113", " + 2w"), "...", paste0("\u2113", " + ", "cw"))
+label_xs <- c(136, 236, 336, 436, 2636)
+
+
+
+dat_phased <- dat_phased %>% 
+  filter(source != filter_blue) %>% 
+  group_by(x_aligned) %>%
+  mutate(mean_by_x = mean(sig2, na.rm = T), 
+         resid_by_x = sig2 - mean_by_x) %>%
+  ungroup()
+
+one_phase_locations <- dat_phased %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet)), alpha = 0.5) + 
+  scale_color_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw() + 
+  geom_vline(aes(xintercept = x_aligned), data = x_vals %>% filter(phase_id == 1), color = "black") + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")),
+       title = "Signature subsampling scheme", 
+       subtitle = "Single phase subsampling, locations") + 
+  theme(plot.subtitle = element_text(face = "italic")) + 
+  annotate("label", y = 8, x = 1086, label = "window size:\nw = 100", fill = "grey80") + 
+  annotate("segment", x = 1037, xend = 1135,
+           y = 4.5, yend = 4.5, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("segment", x = 1135, xend = 1037,
+           y = 4.5, yend = 4.5, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("label", x = label_xs, y = -8, parse = F, label = label_list, fill = "grey80", size = 3) + 
+  annotate("text", x = 50, y = -8, label = "x index:", size = 3)
+
+one_phase_data <- dat_phased %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey80", alpha = 0.3) + 
+  scale_color_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw() + 
+  #geom_vline(aes(xintercept = x_aligned), data = x_vals %>% filter(phase_id == 1), color = "black") + 
+  geom_point(aes(x = x_aligned, y = sig2, color = factor(bullet)), 
+             alpha = 0.85, 
+             data = dat_phased %>% filter(phase_id == 1)) + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")),
+       title = "Signature subsampling scheme", 
+       subtitle = "Single phase subsampling, resulting data") + 
+  theme(plot.subtitle = element_text(face = "italic")) + 
+  annotate("label", y = 5, x = 1086, label = "window size:\nw = 100", fill = "grey80") + 
+  annotate("segment", x = 1037, xend = 1135,
+           y = 0.8, yend = 0.8, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("segment", x = 1135, xend = 1037,
+           y = 0.8, yend = 0.8, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("label", x = label_xs, y = -6, parse = F, label = label_list, fill = "grey80", size = 3) + 
+  annotate("text", x = 50, y = -6, label = "x index:", size = 3)
+
+one_phase_resids <- dat_phased %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id), color = "grey80", alpha = 0.3) + 
+  scale_color_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw() + 
+  #geom_vline(aes(xintercept = x_aligned), data = x_vals %>% filter(phase_id == 1), color = "black") + 
+  geom_hline(yintercept = 0, color = "black") + 
+  geom_point(aes(x = x_aligned, y = resid_by_x, color = factor(bullet)), 
+             alpha = 0.85, 
+             data = dat_phased %>% filter(phase_id == 1)) + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")),
+       title = "Signature subsampling scheme", 
+       subtitle = "Single phase subsampling, resulting data after removing mean by location") + 
+  theme(plot.subtitle = element_text(face = "italic")) + 
+  annotate("label", y = 5, x = 1086, label = "window size:\nw = 100", fill = "grey80") + 
+  annotate("segment", x = 1037, xend = 1135,
+           y = 0.8, yend = 0.8, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("segment", x = 1135, xend = 1037,
+           y = 0.8, yend = 0.8, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("label", x = label_xs, y = -6, parse = F, label = label_list, fill = "grey80", size = 3) + 
+  annotate("text", x = 50, y = -6, label = "x index:", size = 3)
+
+grid.arrange(one_phase_locations, one_phase_data, one_phase_resids, nrow = 3) # saved at 1300 x 1170? 
+```
+
+```{r}
+signature_subsample_one <- dat_phased %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey80", alpha = 0.3) + 
+  theme_bw() + 
+  #geom_vline(aes(xintercept = x_aligned), data = x_vals %>% filter(phase_id == 1), color = "black") + 
+  geom_point(aes(x = x_aligned, y = sig2), color = zissou_palette10[1], 
+             alpha = 0.85, 
+             data = dat_phased %>% filter(phase_id == 1)) + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")),
+       #title = "Signature subsampling scheme", 
+       #subtitle = "Single phase subsampling, resulting data", 
+       title = "One phase subsampling, resulting data") + 
+  theme(plot.subtitle = element_text(face = "italic"), 
+        plot.title = element_text(face = "italic")) + 
+  #annotate("label", y = 8, x = 700, label = "window size:\nw = 100", fill = "grey80") + 
+  annotate("segment", x = 637, xend = 735,
+           y = 0.8, yend = 0.8, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("segment", x = 735, xend = 637,
+           y = 0.8, yend = 0.8, 
+           color = "black", arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("label", x = label_xs, y = -8, parse = F, label = label_list, fill = "grey80", size = 3) + 
+  annotate("text", x = 50, y = -8, label = "x index:", size = 3) + 
+  annotate("rect", xmin = 600, xmax = 900, ymin = -10, ymax = 8, fill = NA, color = "black") + 
+  xlim(c(50, 2600)) 
+
+
+
+x_sequence <- seq(607, 697, by = 10)
+xend_sequence <- seq(707, 797, by = 10)
+y_sequence <- seq(-3.5, -9, length.out = 10)
+phase_colors <- zissou_palette10[c(8:10, 1:7)]
+
+signature_subsample_ten <- dat_phased %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey80", alpha = 0.3) + 
+  theme_bw() + 
+  #geom_vline(aes(xintercept = x_aligned), data = x_vals %>% filter(phase_id == 1), color = "black") + 
+  geom_point(aes(x = x_aligned, y = sig2, color = factor(phase_id)), data = dat_phased %>% filter(!is.na(phase_id)), 
+             alpha = 0.7) + 
+  scale_color_manual(name = "Subsampling Phase", values = zissou_palette10) + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")),
+       #title = "Signature subsampling scheme", 
+       #subtitle = "Ten phase subsampling, resulting data", 
+       title = "Ten phase subsampling, resulting data") + 
+  theme(plot.subtitle = element_text(face = "italic"), 
+        plot.title = element_text(face = "italic"),
+        legend.position = 'bottom') + 
+  #annotate("label", y = 5, x = 675, label = "window size:\nw = 100", fill = "grey80") + 
+  annotate("segment", x = x_sequence, xend = xend_sequence,
+           y =y_sequence, yend = y_sequence, 
+           color = phase_colors, arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("segment", xend = x_sequence, x = xend_sequence,
+           y =y_sequence, yend = y_sequence, 
+           color = phase_colors, arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("rect", xmin = 600, xmax = 900, ymin = -10, ymax = 8, fill = NA, color = "black") + 
+  xlim(c(50, 2600)) + 
+  guides(colour = guide_legend(nrow = 1))
+
+
+
+
+
+signature_subsample_ten_zoom <- dat_phased %>%
+  filter(between(x_aligned, 600, 900)) %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id), color = "grey80", alpha = 0.3) + 
+  theme_bw() + 
+  #geom_vline(aes(xintercept = x_aligned), data = x_vals %>% filter(phase_id == 1), color = "black") + 
+  geom_point(aes(x = x_aligned, y = sig2, color = factor(phase_id)), 
+             alpha = 0.7, data = dat_phased %>% filter(between(x_aligned, 600, 900), !is.na(phase_id))) + 
+  scale_color_manual(name = "Subsampling Phase", values = zissou_palette10) + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")),
+       #title = "Signature subsampling scheme, zoomed", 
+       #subtitle = "Ten phase subsampling, resulting data", 
+       title = "Ten phase subsampling, zoom view, resulting data") + 
+  theme(plot.subtitle = element_text(face = "italic"), 
+        plot.title = element_text(face = "italic"), legend.position = 'none') + 
+  #annotate("label", y = -2, x = 675, label = "window sizes:\nw = 100", fill = "grey90") + 
+  annotate("segment", x = x_sequence, xend = xend_sequence,
+           y =y_sequence, yend = y_sequence, 
+           color = phase_colors, arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("segment", xend = x_sequence, x = xend_sequence,
+           y =y_sequence, yend = y_sequence, 
+           color = phase_colors, arrow = arrow(length = unit(0.2, "cm"))) + 
+  annotate("rect", xmin = 600, xmax = 900, ymin = -10, ymax = 8, fill = NA, color = "black")
+
+
+grid.arrange(signature_subsample_one, signature_subsample_ten, signature_subsample_ten_zoom, nrow = 3)
+
+grid.arrange(
+  signature_subsample_one, signature_subsample_ten, signature_subsample_ten_zoom,
+  #widths = c(8, 4, 4, 4),
+  layout_matrix = rbind(c(1, 1, 1),
+                        c(1, 1, 1),
+                        c(2, 2, 2),
+                        c(2, 2, 2),
+                        c(2, 2, 2),
+                        c(3, 3, 3),
+                        c(3, 3, 3), 
+                        c(3, 3, 3), 
+                        c(3, 3, 3)), 
+  top = "Signature ten-phase subsampling scheme"
+)
+```
+
+
+
+```{r}
+locations_of_interest <- c(600, 650, 700, 750, 800, 850, 900)
+sig_subset <- dat_phased %>%
+  filter(between(x_aligned, 600, 900)) %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = sig2, group = scan_id, color = factor(bullet))) + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2) + 
+  #geom_vline(xintercept = locations_of_interest, color = "black") + 
+  scale_color_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Signature height z"[i], " (", mu, "m)")), 
+       title = "(a) Subset of signature data") 
+
+
+sig_subset_by_location <- dat_phased %>%
+  filter(between(x_aligned, 600, 900)) %>%
+  ggplot() + 
+  geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet))) + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2) + 
+  #geom_vline(xintercept = locations_of_interest, color = "black") + 
+  scale_color_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
+       title = "(b) Subset of signature data, mean by location removed") 
+
+sig_distribution <- dat_phased %>%
+  filter(between(x_aligned, 600, 900)) %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2) + 
+  geom_boxplot(aes(x = bullet, y = resid_by_x, fill = factor(bullet))) + 
+  #geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet))) + 
+  scale_fill_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw()+ 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
+       title = "(c) Distribution of signature heights by bullet, entire subset") 
+
+sig_distribution_by_location <- dat_phased %>%
+  #filter(between(x_aligned, 600, 900)) %>%
+  filter(x_aligned %in% locations_of_interest) %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, color = "black", linetype = 2) + 
+  geom_boxplot(aes(x = factor(x_aligned), y = resid_by_x, fill = factor(bullet))) + 
+  #geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet))) + 
+  scale_fill_manual(name = "Bullet", values = blue_bullets_palette) + 
+  theme_bw() + 
+  labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
+       y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
+       title = "(d) Distribution of signature heights by bullet, by location") 
+
+grid.arrange(sig_subset, sig_subset_by_location, sig_distribution, sig_distribution_by_location, 
+             nrow = 2)
+# 1300 x 975
+```
+
+
+

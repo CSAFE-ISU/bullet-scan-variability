@@ -5,6 +5,7 @@ output: html_document
 
 ```{r}
 library(tidyverse)
+
 ```
 
 
@@ -181,14 +182,17 @@ blue %>%
   filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
          operator_S1 == "Anyesha", round_S1 == "Round 1", 
          operator_S2 == "Mark", bullet_S2 == "Bullet 3") %>% 
-  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  ggplot(aes(x = land_S2, y = land_S1, fill = rfscore)) +
   geom_tile() +
   scale_fill_gradient2(low = "grey80", high = "steelblue", 
                        midpoint = .5) +
   facet_wrap(~machine_S2 + round_S2, nrow = 2) +
   #xlab("Land A") +
   #ylab("Land B") +
-  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20)) + 
+  labs(title = "Barrel Blue - Bullet 3 - Operator F", subtitle =  "base: Barrel Blue - Bullet 1 - Operator B - Sneox1 - Round 1", 
+       x = "Operator F Scans", y = "Base Scans") + 
+  theme(plot.subtitle = element_text(face = "italic"))
 ```
 
 
@@ -206,8 +210,19 @@ blue %>%
   facet_wrap(~machine_S2 + round_S2, nrow = 2) +
   #xlab("Land A") +
   #ylab("Land B") +
-  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20)) + 
+  labs(title = "Barrel Blue - Bullet 1 - Mya", subtitle =  "base: Barrel Blue - Bullet 1 - Anyesha - Sneox1 - Round 1") + 
+  theme(plot.subtitle = element_text(face = "italic"))
 
+
+
+mya_b1_issues <- readRDS("../data/variability_scans/issues/mya_blue_scans.rda")
+image_x3p(mya_b1_issues$x3p[[1]]) 
+image_x3p(mya_b1_issues$x3p[[2]])
+image_x3p(mya_b1_issues$x3p[[3]])
+image_x3p(mya_b1_issues$x3p[[4]])
+image_x3p(mya_b1_issues$x3p[[5]])
+image_x3p(mya_b1_issues$x3p[[6]])
 
 
 # bullet 2
@@ -288,43 +303,480 @@ blue %>%
 
 
 # ORANGE 
+First, add sets of signatures to old GT file!  
+
 ```{r}
-orange_fold1 <- readRDS("processed_data_storage/orange/orange_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
-orange_fold2 <- readRDS("processed_data_storage/orange/orange_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
-orange_fold3 <- readRDS("processed_data_storage/orange/orange_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
-orange_fold4 <- readRDS("processed_data_storage/orange/orange_pairwise_fold4.rda") %>% unnest(rf_feats_and_score)
-orange_fold5 <- readRDS("processed_data_storage/orange/orange_pairwise_fold5.rda") %>% unnest(rf_feats_and_score)
+orange_sigs <- readRDS("/Volumes/databuddy/Variability/data/Orange_all_sigs_updated.rda")
+orange_gt_1 <- read_csv("../data/variability_scans/orange_gt.csv")
 
-saveRDS(orange_fold1, file = "processed_data_storage/orange/orange_pairwise_fold1.rda")
-saveRDS(orange_fold2, file = "processed_data_storage/orange/orange_pairwise_fold2.rda")
-saveRDS(orange_fold3, file = "processed_data_storage/orange/orange_pairwise_fold3.rda")
-saveRDS(orange_fold4, file = "processed_data_storage/orange/orange_pairwise_fold4.rda")
-saveRDS(orange_fold5, file = "processed_data_storage/orange/orange_pairwise_fold5.rda")
+orange_lands <- data.frame(scan_id = unique(orange_sigs$scan_id))
 
-orange <- rbind(orange_fold1, orange_fold2, orange_fold3, orange_fold4, orange_fold5)
+orange_lands <- orange_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
+
+orange_lands <- left_join(orange_lands, orange_gt_1)
+
+write_csv(orange_lands, "../data/variability_scans/orange_gt_update.csv")
+
+```
+
+Now, read in and split into S1, S2 elements!
+```{r}
+orange <- readRDS("/Volumes/databuddy/Variability/data/orange_pairwise_all.rda")
+orange <- orange %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         machine_S2 == "Sneox1", operator_S2 == "Anyesha", 
+         round_S2 == "Round 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~bullet_S2 + round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## Anyesha
+```{r}
+# bullet 1
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+
+## Marco
+```{r}
+# bullet 1
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+## Mark
+```{r}
+# bullet 1
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+## Samantha
+```{r}
+# bullet 1
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+orange %>%
+  filter(bullet_S1 == "Bullet 1", machine_S1 == "Sneox1", 
+         operator_S1 == "Anyesha", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+orange %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Carley", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "darkorange", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
 ```
 
 # PINK
+First, add sets of signatures to old GT file!  
+
 ```{r}
-pink_fold1 <- readRDS("processed_data_storage/pink/pink_pairwise_fold1.rda") %>% unnest(rf_feats_and_score)
-pink_fold2 <- readRDS("processed_data_storage/pink/pink_pairwise_fold2.rda") %>% unnest(rf_feats_and_score)
-pink_fold3 <- readRDS("processed_data_storage/pink/pink_pairwise_fold3.rda") %>% unnest(rf_feats_and_score)
-pink_fold4 <- readRDS("processed_data_storage/pink/pink_pairwise_fold4.rda") %>% unnest(rf_feats_and_score)
-pink_fold5 <- readRDS("processed_data_storage/pink/pink_pairwise_fold5.rda") %>% unnest(rf_feats_and_score)
+pink_sigs <- readRDS("/Volumes/databuddy/Variability/data/Pink_all_sigs_updated.rda")
+pink_gt_1 <- read_csv("../data/variability_scans/pink_gt.csv")
 
-saveRDS(pink_fold1, file = "processed_data_storage/pink/pink_pairwise_fold1.rda")
-saveRDS(pink_fold2, file = "processed_data_storage/pink/pink_pairwise_fold2.rda")
-saveRDS(pink_fold3, file = "processed_data_storage/pink/pink_pairwise_fold3.rda")
-saveRDS(pink_fold4, file = "processed_data_storage/pink/pink_pairwise_fold4.rda")
-saveRDS(pink_fold5, file = "processed_data_storage/pink/pink_pairwise_fold5.rda")
+pink_lands <- data.frame(scan_id = unique(pink_sigs$scan_id))
 
-pink <- rbind(pink_fold1, pink_fold2, pink_fold3, pink_fold4, pink_fold5)
+pink_lands <- pink_lands %>% mutate(scan = scan_id) %>% separate(scan, into = c("barrel", "land", "bullet", "operator", "machine", "round"), sep = "-")
 
+pink_lands <- left_join(pink_lands, pink_gt_1)
 
-
+write_csv(pink_lands, "../data/variability_scans/pink_gt_update.csv")
 
 ```
 
+Now, read in and split into S1, S2 elements!
+```{r}
+pink <- readRDS("/Volumes/databuddy/Variability/data/pink_pairwise_all.rda")
+pink <- pink %>% 
+  mutate(id_S1 = land1, id_S2 = land2) %>% 
+  separate(col = id_S1, 
+           into = c("barrel_S1", "land_S1", "bullet_S1", 
+                    "operator_S1", "machine_S1", "round_S1"), sep = "-") %>% 
+  separate(col = id_S2, 
+           into = c("barrel_S2", "land_S2", "bullet_S2", 
+                    "operator_S2", "machine_S2", "round_S2"), sep = "-")
+
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         machine_S2 == "Sneox1", operator_S2 == "Anyesha", 
+         round_S2 == "Round 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~bullet_S2 + round_S2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+## Anyesha
+```{r}
+# bullet 1
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Anyesha", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+
+## Marco
+```{r}
+# bullet 1
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Marco", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+
+## Mark
+```{r}
+# bullet 1
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Mark", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
+
+
+## Samantha
+```{r}
+# bullet 1
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 1") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+
+
+# bullet 2
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 2") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+
+# bullet 3
+pink %>%
+  filter(bullet_S1 == "Bullet 3", machine_S1 == "Sneox1", 
+         operator_S1 == "Allison", round_S1 == "Round 1", 
+         operator_S2 == "Samantha", bullet_S2 == "Bullet 3") %>% 
+  ggplot(aes(x = land_S2, y = land1, fill = rfscore)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "grey80", high = "salmon", 
+                       midpoint = .5) +
+  facet_wrap(~machine_S2 + round_S2, nrow = 2) +
+  #xlab("Land A") +
+  #ylab("Land B") +
+  theme(aspect.ratio = 1, axis.text.x = element_text(angle =20))
+```
 
 
 
