@@ -1306,7 +1306,11 @@ model_sigmas_pink <- model_sigmas_pink %>% mutate(model = "All", barrel = "Pink"
 model_sigmas_pink_ss <- model_sigmas_pink_ss %>% mutate(model = "Same Source", barrel = "Pink")
 model_sigmas_pink_ds <- model_sigmas_pink_ds %>% mutate(model = "Different Source", barrel = "Pink")
 
+```
 
+ALL BARRELS SUMMARY!  
+
+```{r}
 model_sigmas_all <- rbind(model_sigmas_orange, model_sigmas_orange_ss, model_sigmas_orange_ds, 
                           model_sigmas_blue, model_sigmas_blue_ss, model_sigmas_blue_ds, 
                           model_sigmas_pink, model_sigmas_pink_ss, model_sigmas_pink_ds)
@@ -1346,6 +1350,28 @@ Two model variations to try:
 ```{r}
 model_sigmas_all <- read_csv("/Volumes/databuddy/Variability/data/pairwise_model_results_all.csv")
 model_sigmas_all$tank_rash <- "included"
+
+tank_rash_gt <- read_csv("../data/variability_scans/tank_rash_gt.csv")
+tank_rash_land1 <- tank_rash_gt %>% 
+  mutate(barrel_land1 = barrel, unique_id_land1 = unique_id, 
+         bullet_land1 = bullet, tank_rash_land1 = tank_rash) %>%
+  select(barrel_land1, unique_id_land1, bullet_land1, tank_rash_land1)
+
+tank_rash_land2 <- tank_rash_gt %>% 
+  mutate(barrel_land2 = barrel, unique_id_land2 = unique_id, 
+         bullet_land2 = bullet, tank_rash_land2 = tank_rash) %>%
+  select(barrel_land2, unique_id_land2, bullet_land2, tank_rash_land2)
+
+orange_pairwise_TR <- orange_pairwise %>%
+  left_join(., tank_rash_land1) %>%
+  left_join(., tank_rash_land2)
+
+
+pink_pairwise_TR <- pink_pairwise %>%
+  left_join(., tank_rash_land1) %>%
+  left_join(., tank_rash_land2)
+
+
 model_pairwise_orange_TR <- lmer(rfscore~unique_id_pairing_fixed + 
                               (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
@@ -1354,9 +1380,9 @@ model_pairwise_orange_TR <- lmer(rfscore~unique_id_pairing_fixed +
                               (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
-                            data = orange_pairwise %>% 
-                              filter(unique_id_land1 != "BL O-6", 
-                                     unique_id_land2 != "BL O-6"))
+                            data = orange_pairwise_TR %>% 
+                              filter(tank_rash_land1 == F, 
+                                     tank_rash_land2 == F))
 
 model_pairwise_orange_ss_TR <- lmer(rfscore~unique_id_pairing_fixed + 
                               (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
@@ -1366,10 +1392,10 @@ model_pairwise_orange_ss_TR <- lmer(rfscore~unique_id_pairing_fixed +
                               (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
-                            data = orange_pairwise %>% 
+                            data = orange_pairwise_TR %>% 
                               filter(ground_truth == "Same Source",
-                                     unique_id_land1 != "BL O-6", 
-                                     unique_id_land2 != "BL O-6"))
+                                     tank_rash_land1 == F, 
+                                     tank_rash_land2 == F))
 
 model_pairwise_orange_ds_TR <- lmer(rfscore~unique_id_pairing_fixed + 
                               (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
@@ -1379,10 +1405,10 @@ model_pairwise_orange_ds_TR <- lmer(rfscore~unique_id_pairing_fixed +
                               (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
-                            data = orange_pairwise %>% 
+                            data = orange_pairwise_TR %>% 
                               filter(ground_truth == "Different Source",
-                                     unique_id_land1 != "BL O-6", 
-                                     unique_id_land2 != "BL O-6"))
+                                     tank_rash_land1 == F, 
+                                     tank_rash_land2 == F))
 
 model_sigmas_orange_TR <- as.data.frame(VarCorr(model_pairwise_orange_TR))[,c("grp", "sdcor")]
 model_sigmas_orange_ss_TR <- as.data.frame(VarCorr(model_pairwise_orange_ss_TR))[,c("grp", "sdcor")]
@@ -1390,7 +1416,6 @@ model_sigmas_orange_ds_TR <- as.data.frame(VarCorr(model_pairwise_orange_ds_TR))
 model_sigmas_orange_TR <- model_sigmas_orange_TR %>% mutate(model = "All", barrel = "Orange", tank_rash = "filtered")
 model_sigmas_orange_ss_TR <- model_sigmas_orange_ss_TR %>% mutate(model = "Same Source", barrel = "Orange", tank_rash = "filtered")
 model_sigmas_orange_ds_TR <- model_sigmas_orange_ds_TR %>% mutate(model = "Different Source", barrel = "Orange", tank_rash = "filtered")
-
 
 model_pairwise_pink_TR <- lmer(rfscore~unique_id_pairing_fixed + 
                               (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
@@ -1400,9 +1425,9 @@ model_pairwise_pink_TR <- lmer(rfscore~unique_id_pairing_fixed +
                               (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
-                            data = pink_pairwise %>% 
-                              filter(unique_id_land1 != "BL P-6", 
-                                     unique_id_land2 != "BL P-6"))
+                            data = pink_pairwise_TR %>% 
+                              filter(tank_rash_land1 == F, 
+                                     tank_rash_land2 == F))
 
 model_pairwise_pink_ss_TR <- lmer(rfscore~unique_id_pairing_fixed + 
                               (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
@@ -1412,10 +1437,10 @@ model_pairwise_pink_ss_TR <- lmer(rfscore~unique_id_pairing_fixed +
                               (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
-                            data = pink_pairwise %>% 
+                            data = pink_pairwise_TR %>% 
                               filter(ground_truth == "Same Source",
-                                     unique_id_land1 != "BL P-6", 
-                                     unique_id_land2 != "BL P-6"))
+                                     tank_rash_land1 == F, 
+                                     tank_rash_land2 == F))
 
 model_pairwise_pink_ds_TR <- lmer(rfscore~unique_id_pairing_fixed + 
                               (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
@@ -1425,10 +1450,10 @@ model_pairwise_pink_ds_TR <- lmer(rfscore~unique_id_pairing_fixed +
                               (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
                               (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
-                            data = pink_pairwise %>% 
+                            data = pink_pairwise_TR %>% 
                               filter(ground_truth == "Different Source",
-                                     unique_id_land1 != "BL P-6", 
-                                     unique_id_land2 != "BL P-6"))
+                                     tank_rash_land1 == F, 
+                                     tank_rash_land2 == F))
 
 model_sigmas_pink_TR <- as.data.frame(VarCorr(model_pairwise_pink_TR))[,c("grp", "sdcor")]
 model_sigmas_pink_ss_TR <- as.data.frame(VarCorr(model_pairwise_pink_ss_TR))[,c("grp", "sdcor")]
@@ -1455,20 +1480,78 @@ model_sigmas_TR <-model_sigmas_TR %>%
                                  "Operator-Machine", "Bullet-Operator-Machine", "Residual")), 
          sdcor = round(sdcor, 5))
 
+model_sigmas_TR  %>%
+  mutate(grp = factor(grp, levels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual"))) %>% arrange(barrel, model, grp)
+```
+
+Now visualize the tank rash-no tank rash differences! 
+```{r}
 model_sigmas_all_2 <- rbind(model_sigmas_all, model_sigmas_TR)
+
+write_csv(model_sigmas_all_2, "/Volumes/databuddy/Variability/data/pairwise_model_results_all_TR.csv")
 
 
 model_sigmas_all_2 %>%
   mutate(grp = factor(grp, levels = c("Bullet", "Operator", "Machine","Bullet-Operator", "Bullet-Machine", 
-                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual"))) %>%
+                                 "Operator-Machine", "Bullet-Operator-Machine", "Residual"), 
+                      labels = c("Bullet", "Operator", "Machine", "Bullet-\nOperator", "Bullet-\nMachine", 
+                                 "Operator-\nMachine", "Bullet-\nOperator-\nMachine", "Residual")), 
+         tank_rash = factor(tank_rash, levels = c("included", "filtered"), 
+                            labels = c("All Lands Included", "Tank Rash Lands Excluded"))) %>%
   ggplot() + 
   geom_point(aes(x = grp, y = sdcor, color = model, pch = model), size = 3) + 
   facet_grid(barrel~tank_rash, scale = "free_y") + 
-  scale_color_manual(name = "Pairing IDs Used", values = c("goldenrod", "grey60", "midnightblue")) + 
+  scale_color_manual(name = "Pairing IDs Used", values = c("goldenrod", "grey60", "purple4")) + 
   scale_shape_manual(name = "Pairing IDs Used", values = c(8, 17, 15)) + 
-  theme_bw()
+  theme_bw() #+ 
+  theme(axis.text.x = element_text(angle = 30))
+
 ```
+
 2. Models with 10% of comparisons (randomly sampled) so that we can try for confidence intervals.  
+
+```{r}
+model_pairwise_blue_sub <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = blue_pairwise)
+
+model_pairwise_blue_ss_sub <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = blue_pairwise %>% filter(ground_truth == "Same Source"))
+
+model_pairwise_blue_ds_sub <- lmer(rfscore~unique_id_pairing_fixed + 
+                              (1|bullet_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed) + 
+                              (1|bullet_pairing_fixed:operator_pairing_fixed:machine_pairing_fixed:unique_id_pairing_fixed), 
+                            data = blue_pairwise %>% filter(ground_truth == "Different Source"))
+
+model_sigmas_blue <- as.data.frame(VarCorr(model_pairwise_blue))[,c("grp", "sdcor")]
+model_sigmas_blue_ss <- as.data.frame(VarCorr(model_pairwise_blue_ss))[,c("grp", "sdcor")]
+model_sigmas_blue_ds <- as.data.frame(VarCorr(model_pairwise_blue_ds))[,c("grp", "sdcor")]
+model_sigmas_blue <- model_sigmas_blue %>% mutate(model = "All", barrel = "Blue")
+model_sigmas_blue_ss <- model_sigmas_blue_ss %>% mutate(model = "Same Source", barrel = "Blue")
+model_sigmas_blue_ds <- model_sigmas_blue_ds %>% mutate(model = "Different Source", barrel = "Blue")
+
+```
+
+
 
 
 
@@ -1491,6 +1574,7 @@ Confidence Intervals.
 
 ```
 
+Pairwise visuals.  
 ```{r}
 all_pairwise <- rbind(orange_pairwise, pink_pairwise, blue_pairwise)
 all_pairwise %>% 
@@ -1800,6 +1884,46 @@ pink_bullets <- data.frame(source = c(p6_bullets,p2_bullets),
 tank_rash_bullets <- rbind(orange_bullets, pink_bullets)
 tank_rash_bullets <- tank_rash_bullets %>% mutate(source = purrr::map_chr(source, .f = function(x) str_replace(x, "//", "/")))
 write_csv(tank_rash_bullets, "../data/variability_scans/tank_rash_bullets.csv")
+# grab them from the server
+tank_rash_x3ps <- readRDS("/Volumes/databuddy/Variability/data/tank_rash_scans.rda")
+
+# orange land 6: 
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[1]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[2]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[3]], file = "../images/orange-bullet3-land6")
+
+# orange land 4: 
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[4]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[5]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[6]], file = "../images/orange-bullet3-land4")
+
+# orange land 1:
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[7]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[8]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[9]], file = "../images/orange-bullet3-land1")
+
+# pink land 6:
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[10]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[11]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[12]])
+
+# pink land 2:
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[13]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[14]])
+x3ptools::image_x3p(tank_rash_x3ps$x3p[[15]])
+
+
+tank_rash_gt <- data.frame(barrel = rep(c("Barrel Blue", "Barrel Orange", "Barrel Pink"), each = 18), 
+                           unique_id = rep(unique(all_aligned$unique_id), each = 3), 
+                           bullet = rep(c("Bullet 1", "Bullet 2", "Bullet 3"), times = 18))
+
+write_csv(tank_rash_gt, "../data/variability_scans/tank_rash_gt.csv")
+
+
+#filename <- "../images/name_here.png"
+#image_x3p(x3p, file = filename, size = c(3500, 1500), zoom = 0.5)
+
+
 ```
 
 
@@ -1843,6 +1967,7 @@ all_pairwise_viz %>%
   theme_bw()
   
 ```
+
 
 
 ## Other visualizations
@@ -2222,7 +2347,9 @@ sig_subset_by_location <- dat_phased %>%
   theme_bw() + 
   labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
        y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
-       title = "(b) Subset of signature data, mean by location removed") 
+       title = "(b) Subset of signature data, mean by location removed") + 
+  geom_vline(xintercept = locations_of_interest, color = "black", linetype = 2) + 
+  xlim(c(585, 915))
 
 sig_distribution <- dat_phased %>%
   filter(between(x_aligned, 600, 900)) %>%
@@ -2241,13 +2368,14 @@ sig_distribution_by_location <- dat_phased %>%
   filter(x_aligned %in% locations_of_interest) %>%
   ggplot() + 
   geom_hline(yintercept = 0, color = "black", linetype = 2) + 
+  geom_vline(xintercept = factor(locations_of_interest), linetype = 2, color = "black") + 
   geom_boxplot(aes(x = factor(x_aligned), y = resid_by_x, fill = factor(bullet))) + 
   #geom_line(aes(x = x_aligned, y = resid_by_x, group = scan_id, color = factor(bullet))) + 
   scale_fill_manual(name = "Bullet", values = blue_bullets_palette) + 
   theme_bw() + 
   labs(x = expression(paste("Relative Location x"[i], " (", mu, "m)")), 
        y = expression(paste("Centered Signature Height z"[i], " - ", mu[i], " (", mu, "m)")), 
-       title = "(d) Distribution of signature heights by bullet, by location") 
+       title = "(d) Distribution of signature heights by bullet, by location")
 
 grid.arrange(sig_subset, sig_subset_by_location, sig_distribution, sig_distribution_by_location, 
              nrow = 2)
